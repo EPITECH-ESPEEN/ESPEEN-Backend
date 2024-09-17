@@ -23,8 +23,8 @@ async fn main() {
                 "hardeol" => format!("Hello, {}! You are the best!", name),
                 "Clément" => format!("Hello, {}! Python c'est nul", name),
                 _ => format!("Hello, {}!", name),
-            }
-        }))
+            } }))
+        .route("/stack", get(|| async { "Rust, Vue et Directus" }))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("localhost:3000").await.unwrap();
