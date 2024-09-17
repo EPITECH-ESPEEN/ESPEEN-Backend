@@ -2,12 +2,35 @@ use axum::{
     extract::Path,
     routing::get,
     Router,
+    response::IntoResponse,
+    http::StatusCode,
 };
-
+use reqwest::Client;
 use tower_http::cors::{
     CorsLayer,
     Any
 };
+
+async fn fetch_tips() -> impl IntoResponse {
+    let client = Client::new();
+    let url = "https://api.weatherapi.com/v1/current.json?q=2&lang=fr&key=01590aafbbae4766954122808241709";
+    let api_key = "01590aafbbae4766954122808241709";
+
+    let response = client.get(url)
+            .header("Authorization", format!("Bearer {api_key}"))
+            .send()
+            .await;
+
+    match response {
+        Ok(response) => {
+            match response.text().await {
+                Ok(body) => (StatusCode::OK, body),
+                Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Error parsing response body".into()),
+            }
+        }
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Request failed".into()),
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -25,6 +48,7 @@ async fn main() {
                 _ => format!("Hello, {}!", name),
             } }))
         .route("/stack", get(|| async { "Rust, Vue et Directus" }))
+        .route("/tips", get(fetch_tips))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("localhost:3000").await.unwrap();
