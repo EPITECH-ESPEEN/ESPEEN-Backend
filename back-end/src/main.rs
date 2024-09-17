@@ -47,7 +47,7 @@ async fn main() {
                 "Clément" => format!("Hello, {}! Python c'est nul", name),
                 _ => format!("Hello, {}!", name),
             } }))
-        .route("/stack", get(|| async { "Rust, Vue et Directus/Postgre" }))
+        .route("/stack", get(|| async { "Rust, Vue et Directus/MariaDB" }))
         .route("/tips", get(fetch_tips))
         .layer(cors);
 
