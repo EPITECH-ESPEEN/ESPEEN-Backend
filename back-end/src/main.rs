@@ -13,7 +13,7 @@ use tower_http::cors::{
 
 async fn fetch_tips() -> impl IntoResponse {
     let client = Client::new();
-    let url = "https://api.weatherapi.com/v1/current.json?q=2&lang=fr&key=01590aafbbae4766954122808241709";
+    let url = "https://api.weatherapi.com/v1/current.json?q=Nice&lang=fr&key=01590aafbbae4766954122808241709";
     let api_key = "01590aafbbae4766954122808241709";
 
     let response = client.get(url)
@@ -47,7 +47,7 @@ async fn main() {
                 "Clément" => format!("Hello, {}! Python c'est nul", name),
                 _ => format!("Hello, {}!", name),
             } }))
-        .route("/stack", get(|| async { "Rust, Vue et Directus" }))
+        .route("/stack", get(|| async { "Rust, Vue et Directus/Postgre" }))
         .route("/tips", get(fetch_tips))
         .layer(cors);
 
