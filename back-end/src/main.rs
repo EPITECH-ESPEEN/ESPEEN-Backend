@@ -1,3 +1,4 @@
+use std::time::Duration;
 use axum::{extract::{Path, Extension}, routing::get, routing::post, Json, Router, response::IntoResponse, http::StatusCode};
 use reqwest::{Client};
 use tower_http::cors::{
@@ -6,7 +7,7 @@ use tower_http::cors::{
 };
 use dotenv::dotenv;
 use serde_json::json;
-use sqlx_mysql::MySqlPool;
+use sqlx_mysql::{MySqlPool, MySqlPoolOptions};
 
 #[derive(serde::Deserialize)]
 struct LoginForm {
@@ -77,13 +78,12 @@ async fn main() {
     dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = match MySqlPool::connect(&database_url).await {
-        Ok(pool) => pool,
-        Err(e) => {
-            eprintln!("Failed to connect to the database: {}", e);
-            return;
-        }
-    };
+    let pool = MySqlPoolOptions::new()
+        .max_connections(20)
+        .acquire_timeout(Duration::from_secs(2))
+        .connect(&database_url)
+        .await
+        .unwrap();
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -100,9 +100,9 @@ async fn main() {
             } }))
         .route("/stack", get(|| async { "Rust, Vue et Directus/MariaDB" }))
         .route("/tips", get(fetch_tips))
-        // .route("/login", post({
-        //     move |payload| login(payload, Extension(pool.clone()))
-        // }))
+        .route("/login", post({
+            move |payload| login(payload, Extension(pool.clone()))
+        }))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("localhost:3000").await.unwrap();
