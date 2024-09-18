@@ -1,5 +1,5 @@
 use std::time::Duration;
-use axum::{extract::{Path, Extension}, routing::get, routing::post, Json, Router, response::IntoResponse, http::StatusCode};
+use axum::{extract::{Path, Extension}, routing::get, routing::post, Json, Router, response::IntoResponse, http::StatusCode, http::Method};
 use reqwest::{Client};
 use tower_http::cors::{
     CorsLayer,
@@ -67,8 +67,8 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods(vec!["GET".parse().unwrap(), "POST".parse().unwrap()])
-        .allow_headers(vec![axum::http::header::ACCEPT]);
+        .allow_methods(vec![Method::GET, Method::POST])
+        .allow_headers(vec![axum::http::header::ACCEPT, axum::http::header::CONTENT_TYPE]);
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
