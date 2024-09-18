@@ -15,20 +15,6 @@ struct LoginForm {
     password: String,
 }
 
-// async fn authenticate_user(username: &str, password: &str, pool: &MySqlPool) -> Result<bool, sqlx::Error> {
-//     let row = sqlx::query("SELECT * FROM users WHERE username = ? AND password = ?")
-//         .bind(username)
-//         .bind(password)
-//         .await?;
-//
-//     let caca = row.fetch_one(pool).await;
-//
-//     match caca {
-//         Ok(_) => Ok(true),
-//         Err(_) => Ok(false),
-//     }
-// }
-
 async fn fetch_tips() -> impl IntoResponse {
     let client = Client::new();
     let url = "https://api.weatherapi.com/v1/current.json?q=Nice&lang=fr&key=01590aafbbae4766954122808241709";
@@ -51,22 +37,16 @@ async fn fetch_tips() -> impl IntoResponse {
 }
 
 async fn login(Json(payload): Json<LoginForm>, Extension(pool): Extension<MySqlPool>) -> impl IntoResponse {
-    // match authenticate_user(&form.username, &form.password, &pool).await {
-    //     Ok(true) => Json("Login successful".to_string()),
-    //     Ok(false) => Json("Invalid credentials".to_string()),
-    //     Err(_) => Json("An error occurred".to_string()),
-    // }
-
     let username = &payload.username;
     let password = &payload.password;
 
-    let result = sqlx::query("SELECT * FROM users WHERE username = ? AND password = ?")
+    let result = sqlx::query("SELECT * FROM Users WHERE username = ? AND password = ?")
         .bind(username)
         .bind(password)
         .fetch_optional(&pool)
         .await;
-    println!("{:?}, {:?}, {:?}", result, username, password);
     match result {
+        Ok(None) => Json(json!({"message": "Invalid credentials"})).into_response(),
         Ok(_) => Json(json!({"message": "Login successful"})).into_response(),
         Err(_) => Json(json!({"message": "Invalid credentials"})).into_response(),
     }
