@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import {useNavigate} from "react-router-dom";
 
 function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -23,6 +25,9 @@ function LoginPage() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Success:', result);
+                if (result.message !== "Invalid credentials") {
+                    navigate('/home');
+                }
             } else {
                 console.error('Error:', response.status);
             }
