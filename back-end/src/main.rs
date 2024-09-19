@@ -53,17 +53,6 @@ async fn login(Json(payload): Json<LoginForm>, Extension(pool): Extension<MySqlP
 
 }
 
-// async fn call_r34_api(client: &Client) -> String {
-//     let response = client
-//         .get("https://api.rule34.xxx/index.php?page=dapi&s=post&q=index")
-//         .send()
-//         .await
-//         .unwrap();
-//
-//     let json_response: serde_json::Value = response.json().await.unwrap();
-//     json_response["url"].as_str().unwrap().to_string()
-// }
-//
 async fn github_webhook(Json(payload): Json<serde_json::Value>) -> Json<serde_json::Value> {
     println!("Received GitHub webhook: {:?}", payload);
 
