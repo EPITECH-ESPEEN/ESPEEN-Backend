@@ -110,5 +110,5 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("localhost:3000").await.unwrap();
     println!("Listening on: http://{}", listener.local_addr().unwrap());
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await.unwrap(); //test
 }
