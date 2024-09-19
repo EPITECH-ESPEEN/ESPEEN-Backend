@@ -53,6 +53,27 @@ async fn login(Json(payload): Json<LoginForm>, Extension(pool): Extension<MySqlP
 
 }
 
+// async fn call_r34_api(client: &Client) -> String {
+//     let response = client
+//         .get("https://api.rule34.xxx/index.php?page=dapi&s=post&q=index")
+//         .send()
+//         .await
+//         .unwrap();
+//
+//     let json_response: serde_json::Value = response.json().await.unwrap();
+//     json_response["url"].as_str().unwrap().to_string()
+// }
+//
+async fn github_webhook(Json(payload): Json<serde_json::Value>) -> Json<serde_json::Value> {
+    println!("Received GitHub webhook: {:?}", payload);
+
+    // let image_url = call_r34_api(&client).await;
+
+    Json(json!({
+        "status": "success",
+    }))
+}
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -83,6 +104,7 @@ async fn main() {
         .route("/login", post({
             move |payload| login(payload, Extension(pool.clone()))
         }))
+        .route("/github-webhook", post(github_webhook))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("localhost:3000").await.unwrap();
