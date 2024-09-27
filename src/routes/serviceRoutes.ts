@@ -1,10 +1,9 @@
 import express from "express";
-import { getUsers } from "../controllers/userController";
+import { getCurrentWeather } from "../services/weatherServices";
 import { isAuthentificatedUser } from "../middlewares/userAuthentification";
 
 const router = express.Router();
 
-// router.route("/users").get(getUsers);
-router.route("/users").get(isAuthentificatedUser, getUsers);
+router.route("/weather/:city").get(isAuthentificatedUser, getCurrentWeather);
 
 export default router;
