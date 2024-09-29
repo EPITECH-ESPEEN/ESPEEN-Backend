@@ -31,10 +31,12 @@ app.use(cookieParser());
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
+import aboutJSON from "./routes/aboutJSON";
 
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
+app.use(aboutJSON);
 
 app.use(errorMiddleware);
 
