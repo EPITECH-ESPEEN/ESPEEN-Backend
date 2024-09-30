@@ -3,11 +3,16 @@ import dotenv from "dotenv";
 import connectDB from "./config/dataBase";
 import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
-dotenv.config({ path: "config/config.env" });
+import cors from "cors";
+import authRoutes from "./routes/authRoutes";
+import userRoutes from "./routes/usersRoutes";
+import serviceRoutes from "./routes/serviceRoutes";
+import aboutJSON from "./routes/aboutJSON";
+import googleRouter from "./routes/googleApiRoutes";
 
+dotenv.config();
 const app = express();
 
-import cors from "cors";
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
@@ -21,27 +26,26 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-dotenv.config({ path: "back-end/config/config.env" });
-
 connectDB();
 
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-import authRoutes from "./routes/authRoutes";
-import userRoutes from "./routes/usersRoutes";
-import serviceRoutes from "./routes/serviceRoutes";
-import aboutJSON from "./routes/aboutJSON";
-
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
+app.use("/api", googleRouter);
 app.use(aboutJSON);
 
 app.use(errorMiddleware);
 
+app.get("/", (req, res) => {
+    res.send("API is running...");
+});
+
 const server = app.listen(process.env.PORT, () => {
   console.log("\x1b[34m%s\x1b[0m", `[INFO] Server started on the PORT: ${process.env.PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`Running at http://localhost:${process.env.PORT}`);
 });
 
 process.on("unhandledRejection", (err) => {
