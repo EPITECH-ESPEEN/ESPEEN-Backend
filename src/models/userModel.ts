@@ -1,9 +1,8 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import jwt from "jsonwebtoken";
 
 interface IUser extends Document {
+  uid: number;
   name: string;
   email: string;
   password: string;
@@ -14,13 +13,16 @@ interface IUser extends Document {
   role: string;
   resetPasswordToken?: string;
   resetPasswordExpire?: Date;
-  comparePassword: (reqPassword: string) => Promise<boolean>;
-  getJWTToken: () => string;
-  getResetPasswordToken: () => string;
+  comparePassword(reqPassword: string): Promise<boolean>;
 }
 
 const userSchema: Schema<IUser> = new mongoose.Schema(
   {
+    uid: {
+      type: Number,
+      required: [true, "User id is required"],
+      unique: true,
+    },
     name: {
       type: String,
       required: [true, "User name is required"],
@@ -39,13 +41,13 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
         validator: function (password: string) {
           return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
         },
-        message: "Password must contain at least one uppercase letter, one lowercase letter, one number and one special character",
+        message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
       },
       select: false,
     },
     avatar: {
-      public_id: String,
-      url: String,
+      public_id: { type: String },
+      url: { type: String },
     },
     role: {
       type: String,
@@ -58,31 +60,26 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
 );
 
 userSchema.pre<IUser>("save", async function (next) {
+  if (this.isNew) {
+    const highestUidUser = await (this.constructor as mongoose.Model<IUser>).findOne().sort("-uid").exec();
+    if (highestUidUser) {
+      this.uid = highestUidUser.uid + 1;
+    } else {
+      this.uid = 1;
+    }
+  }
+
   if (!this.isModified("password")) {
-    next();
+    return next();
   }
   this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-userSchema.methods.getJWTToken = function () {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined in environment variables");
-  }
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_TIME,
-  });
+userSchema.methods.comparePassword = async function (reqPassword: string): Promise<boolean> {
+  return bcrypt.compare(reqPassword, this.password);
 };
 
-userSchema.methods.comparePassword = async function (reqPassword: string) {
-  return await bcrypt.compare(reqPassword, this.password);
-};
+const User = mongoose.model<IUser>("User", userSchema);
 
-userSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
-
-  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-  this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-  return resetToken;
-};
-
-export default mongoose.model<IUser>("User", userSchema);
+export default User;
