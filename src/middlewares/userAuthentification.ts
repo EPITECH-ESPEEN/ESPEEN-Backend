@@ -3,7 +3,6 @@ import ErrorHandler from "../utils/errorHandler";
 import catchAsyncErrors from "./catchAsyncErrors";
 import User from "../models/userModel";
 import { NextFunction, Request, Response } from "express";
-import express from "express";
 
 interface AuthentificatedRequest extends Request {
   user?: any;
@@ -32,12 +31,3 @@ export const authorizeRoles = (...roles: string[]) => {
     next();
   };
 };
-
-function isAuthenticated(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect("/login");
-}
-
-export default isAuthenticated;
