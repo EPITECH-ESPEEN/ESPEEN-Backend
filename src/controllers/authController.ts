@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 import ErrorHandler from "../utils/errorHandler";
-import User from "../models/userModel";
+import User, {UserRole} from "../models/userModel";
 import sendToken from "../utils/sendToken";
 
 interface RegisterUserBody {
