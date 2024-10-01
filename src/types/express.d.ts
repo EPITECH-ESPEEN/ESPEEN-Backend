@@ -1,9 +1,11 @@
+import { UserRole } from "../models/userModel";
+
 declare global {
   namespace Express {
     interface Request {
       user?: {
-        _id: string;
-        role: string;
+        uid: number;
+        role: UserRole;
       };
     }
   }
