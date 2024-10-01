@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
-interface ITokens extends Document {
+interface IToken extends Document {
   uid: number;
   user_uid: number;
   service_uid: number;
@@ -10,7 +10,7 @@ interface ITokens extends Document {
   identifier: string;
 }
 
-const tokensSchema: Schema<ITokens> = new mongoose.Schema(
+const tokenSchema: Schema<IToken> = new mongoose.Schema(
   {
     uid: {
       type: Number,
@@ -42,7 +42,7 @@ const tokensSchema: Schema<ITokens> = new mongoose.Schema(
   { timestamps: true }
 );
 
-tokensSchema.pre<ITokens>("save", async function (next) {
+tokenSchema.pre<IToken>("save", async function (next) {
   if (!this.isModified("identifier")) {
     return next();
   }
@@ -55,10 +55,10 @@ tokensSchema.pre<ITokens>("save", async function (next) {
   }
 });
 
-tokensSchema.methods.compareIdentifier = async function (plainIdentifier: string): Promise<boolean> {
+tokenSchema.methods.compareIdentifier = async function (plainIdentifier: string): Promise<boolean> {
   return await bcrypt.compare(plainIdentifier, this.identifier);
 };
 
-const Tokens = mongoose.model<ITokens>("Tokens", tokensSchema);
+const Tokens = mongoose.model<IToken>("Tokens", tokenSchema);
 
 export default Tokens;
