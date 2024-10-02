@@ -9,7 +9,7 @@ const app = express();
 
 import cors from "cors";
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: process.env.FRONT_URL,
   credentials: true,
   optionSuccessStatus: 200,
 };
