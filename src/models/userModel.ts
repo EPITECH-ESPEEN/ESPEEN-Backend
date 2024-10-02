@@ -77,7 +77,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       url: { type: String },
     },
   },
-  { timestamps: true, _id: false }
+  { timestamps: true }
 );
 
 // Define UID before validation

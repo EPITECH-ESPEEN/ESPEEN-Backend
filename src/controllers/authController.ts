@@ -32,18 +32,18 @@ export const registerUser = catchAsyncErrors(async (req: Request<{}, {}, Registe
 
 // Login user : /api/login
 export const loginUser = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { username, password } = req.body;
+  if (!username || !password) {
     return next(new ErrorHandler("Email and password are required", 400));
   }
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ username: username }).select("+password");
 
   if (!user) {
-    return next(new ErrorHandler("Invalid email or password", 401));
+    return next(new ErrorHandler("Invalid username or password", 401));
   }
   const isPasswordMatched = await user.comparePassword(password);
   if (!isPasswordMatched) {
-    return next(new ErrorHandler("Invalid email or password", 401));
+    return next(new ErrorHandler("Invalid username or password", 401));
   }
 
   sendToken(user, 200, res);
