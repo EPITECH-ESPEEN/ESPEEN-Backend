@@ -4,6 +4,7 @@ interface IActionReaction extends Document {
   name: string;
   action_reaction: boolean;
   id_service: number;
+  webhook_url?: string;
 }
 
 const actionReactionSchema: Schema<IActionReaction> = new mongoose.Schema(
@@ -19,6 +20,10 @@ const actionReactionSchema: Schema<IActionReaction> = new mongoose.Schema(
     id_service: {
       type: Number,
       required: [true, "Service id is required"],
+    },
+    webhook_url: {
+      type: String,
+      required: false,
     },
   },
   { timestamps: true }
