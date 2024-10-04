@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 import ErrorHandler from "../utils/errorHandler";
-import User, {UserRole} from "../models/userModel";
+import User, { UserRole } from "../models/userModel";
 import sendToken from "../utils/sendToken";
 
 interface RegisterUserBody {
@@ -58,10 +58,8 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
   });
 });
 
-//Get user profile : /api/profile
-export const getUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {  
-  const userUid = req.user?.uid;
-  const user = await User.findOne({ uid: userUid });
+export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
+  const user = await User.findById(req.user?._id);
 
   if (!user) {
     return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));

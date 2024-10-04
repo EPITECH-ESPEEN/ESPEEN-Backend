@@ -2,3 +2,5 @@
 .idea/
 node_modules/
 *.env
+dist/
+/espeen-ez-o7-creds.json
