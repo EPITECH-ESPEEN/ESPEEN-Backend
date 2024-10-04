@@ -40,7 +40,7 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
   });
 });
 
-export const getUserProfile = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
   const user = await User.findById(req.user?._id);
 
   if (!user) {
