@@ -9,6 +9,7 @@ import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
 import aboutJSON from "./routes/aboutJSON";
 import googleRouter from "./routes/googleApiRoutes";
+import {serviceRouter} from "./utils/serviceRouter";
 
 dotenv.config();
 const app = express();
@@ -41,6 +42,7 @@ app.use(errorMiddleware);
 
 app.get("/", (req, res) => {
     res.send("API is running...");
+    serviceRouter();
 });
 
 const server = app.listen(process.env.PORT, () => {

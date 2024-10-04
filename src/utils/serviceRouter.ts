@@ -10,9 +10,29 @@
 `--' `--'  `--' `--' `--' '--'`-------' `------'     `-----' `------'     `-----'     `-----' `--' '--' `--'  `-'
 */
 
-function* serviceRouter() {
-    let user_services = ["google.gmail", "meteo.nice"]; // ! Ask to DB
+import {APIRouter, isAuthToGoogle} from "../routes/googleApiRoutes";
 
-    yield* user_services;
+export function serviceRouter() {
+    const routerAPI = new APIRouter();
+
+    setInterval(async () => {
+        if (!isAuthToGoogle) {
+            console.log("Not authentificated to Google");
+            return;
+        }
+        let user_services: string[] | undefined = ["google.gmail.recep_email", "meteo"]; // ! Ask to DB
+        let results: any | undefined = undefined;
+
+        // if (user_services === [] /*|| user_services === undefined */) {
+        //     return;
+        // }
+        for (let i = 0; i < user_services.length; i++) {
+            let service: string[] = user_services[i].split(".");
+            if (results === undefined) {
+                results = await routerAPI.redirect_to(service[0], user_services[i].replace(service[0] + ".", ""));
+            } else {
+                results = await routerAPI.redirect_to(service[0], user_services[i].replace(service[0] + ".", ""), results);
+            }
+        }
+    }, 5000);
 }
-
