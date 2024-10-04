@@ -6,6 +6,6 @@ import { discordMessageWebhook } from "../services/discordServices";
 const router = express.Router();
 
 router.route("/weather/:city").get(isAuthentificatedUser, getCurrentWeather);
-router.route("/discord").post(discordMessageWebhook);
+router.route("/discord").post(isAuthentificatedUser, discordMessageWebhook);
 
 export default router;
