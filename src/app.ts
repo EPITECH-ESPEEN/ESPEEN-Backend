@@ -7,21 +7,13 @@ dotenv.config({ path: "config/config.env" });
 
 const app = express();
 
-import cors from "cors";
-const corsOptions = {
-  origin: process.env.FRONT_URL,
-  credentials: true,
-  optionSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
-
 process.on("uncaughtException", (err) => {
   console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${err}`);
   console.log("\x1b[34m%s\x1b[0m", "[INFO] Shutting down server due to Unhandled Promise Rejection");
   process.exit(1);
 });
 
-dotenv.config({ path: "back-end/config/config.env" });
+dotenv.config({ path: "src/config/config.env" });
 
 connectDB();
 
