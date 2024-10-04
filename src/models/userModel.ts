@@ -19,6 +19,7 @@ interface IUser extends Document {
     public_id: string;
     url: string;
   };
+  actionReaction: { [key: string]: string };
   getJWTToken(): string;
   comparePassword(reqPassword: string): Promise<boolean>;
 }
@@ -67,14 +68,22 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     phone: {
       type: String,
       maxLength: [20, "User phone number cannot exceed 20 characters"],
+      required: false,
     },
     location: {
       type: String,
       maxLength: [100, "User location cannot exceed 100 characters"],
+      required: false,
     },
     avatar: {
       public_id: { type: String },
       url: { type: String },
+      required: false,
+    },
+    actionReaction: {
+      type: Map,
+      of: String,
+      required: false,
     },
   },
   { timestamps: true }
@@ -84,11 +93,8 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
 userSchema.pre<IUser>("validate", async function (next) {
   if (this.isNew) {
     try {
-      const highestUidUser = await (this.constructor as mongoose.Model<IUser>)
-        .findOne()
-        .sort("-uid")
-        .exec();
-        
+      const highestUidUser = await (this.constructor as mongoose.Model<IUser>).findOne().sort("-uid").exec();
+
       this.uid = highestUidUser ? highestUidUser.uid + 1 : 1;
     } catch (error) {
       return next(new Error("Failed to generate UID"));
@@ -113,7 +119,7 @@ userSchema.methods.comparePassword = async function (reqPassword: string): Promi
 };
 
 //Return JWT
-userSchema.methods.getJWTToken = function() {
+userSchema.methods.getJWTToken = function () {
   if (!process.env.SECRET_KEY) {
     throw new Error("SECRET_KEY is not defined");
   }
