@@ -9,7 +9,11 @@ import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
 import aboutJSON from "./routes/aboutJSON";
 import googleRouter from "./routes/googleApiRoutes";
+import discordRouter from "./routes/discordApiRoutes";
 import { serviceRouter } from "./utils/serviceRouter";
+import express from "express";
+import session from "express-session";
+import passport from "passport";
 
 dotenv.config();
 const app = express();
@@ -32,13 +36,28 @@ connectDB();
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  })
+);
+
 app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
+app.use("/api/discord", discordRouter);
 app.use(aboutJSON);
 
 app.use(errorMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.get("/", (req, res) => {
   res.send("API is running...");

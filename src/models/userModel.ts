@@ -35,6 +35,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
+      required: true,
     },
     username: {
       type: String,
@@ -76,6 +77,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       required: false,
     },
     avatar: {
+      type: String,
       public_id: { type: String },
       url: { type: String },
       required: false,
