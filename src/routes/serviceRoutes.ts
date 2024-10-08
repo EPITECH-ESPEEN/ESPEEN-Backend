@@ -1,9 +1,9 @@
 import express from "express";
 import { getCurrentWeather } from "../services/weatherServices";
-import { isAuthentificatedUser } from "../middlewares/userAuthentification";
+import { isAuthenticatedUser } from "../middlewares/userAuthentication";
 
 const router = express.Router();
 
-router.route("/weather/:city").get(isAuthentificatedUser, getCurrentWeather);
+router.route("/weather/:city").get(isAuthenticatedUser, getCurrentWeather);
 
 export default router;

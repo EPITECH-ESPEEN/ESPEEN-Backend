@@ -1,9 +1,9 @@
 import express from "express";
 import { getUsers } from "../controllers/userController";
-import { isAuthentificatedUser  } from "../middlewares/userAuthentification";
+import { isAuthenticatedUser  } from "../middlewares/userAuthentication";
 
 const router = express.Router();
 
-router.route("/users").get(isAuthentificatedUser, getUsers);
+router.route("/users").get(isAuthenticatedUser, getUsers);
 
 export default router;

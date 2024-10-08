@@ -12,8 +12,9 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+//TODO Authentificated is either brand new, or not a real word
 //Check if user is auth
-export const isAuthentificatedUser = catchAsyncErrors(async (req: AuthenticatedRequest, res, next) => {
+export const isAuthenticatedUser = catchAsyncErrors(async (req: AuthenticatedRequest, res, next) => {
   const {token} = req.cookies;
   if (!token) {
       return next(new ErrorHandler("Login required to access this resource", 401));

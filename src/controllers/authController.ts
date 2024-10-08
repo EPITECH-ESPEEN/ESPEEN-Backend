@@ -51,6 +51,11 @@ export const loginUser = catchAsyncErrors(async (req: Request, res: Response, ne
 
 // Logout user : /api/logout
 export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+  //NOTE: This is why JWT ain't good.
+  // Here, you just say "hey, remove the token plz"
+  // But user could just copy paste it again, and be logged in again
+  // Not cool
+  // Note a _real_ problem tho
   res.clearCookie("token");
 
   res.status(200).json({
@@ -59,14 +64,57 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
 });
 
 //Get user profile : /api/profile
-export const getUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {  
+export const getUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const userUid = req.user?.uid;
   const user = await User.findOne({ uid: userUid });
 
   if (!user) {
     return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));
   }
+
+  //TODO: NEVER send a password
+  // bcrypt, hashed, in chinese, i don't give a f, NEVER send a password back to a user !!
+
+  const {
+    password,
+    // Paste here any other field you wish to NOT send back when calling /api/profile
+    ...clearedUser
+  } = user;
+
   res.status(200).json({
-    user,
+    clearedUser
+  });
+});
+
+export const setUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const userUid = req.user?.uid;
+  const updates = req.body;
+
+  const user = await User.findOne({ uid: userUid });
+
+  if (!user) {
+    return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));
+  }
+
+  const forbiddenFields = ['uid', 'role'];
+  forbiddenFields.map((x) => {
+    if (updates[x])
+      return next(new ErrorHandler(`User tried to change ${x}. This is not permitted`, 400));
+  });
+
+  //TODO: Did not test this, code from a friend
+  Object.assign(user, updates);
+  await user.save();
+
+  const {
+    password,
+    // Paste here any other field you wish to NOT send back when calling /api/profile
+    ...clearedUser
+  } = user;
+
+  res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user: clearedUser
   });
 });
