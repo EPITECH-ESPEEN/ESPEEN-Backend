@@ -22,7 +22,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 process.on("uncaughtException", (err) => {
-  console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${err}`);
+  console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${err} ${err.stack}`);
   console.log("\x1b[34m%s\x1b[0m", "[INFO] Shutting down server due to Unhandled Promise Rejection");
   process.exit(1);
 });
@@ -54,7 +54,7 @@ const server = app.listen(process.env.PORT, () => {
 
 process.on("unhandledRejection", (err) => {
   const error = err as Error;
-  console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${error.message}`);
+  console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${error.message} ${error.stack}`);
   console.log("\x1b[34m%s\x1b[0m", "[INFO] Shutting down server due to Unhandled Promise Rejection");
   server.close(() => {
     process.exit(1);
