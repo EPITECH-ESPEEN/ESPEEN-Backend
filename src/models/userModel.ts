@@ -134,4 +134,4 @@ userSchema.methods.getJWTToken = function () {
 
 const User = mongoose.model<IUser>("User", userSchema);
 
-export default mongoose.model("User", userSchema);
+export default User;
