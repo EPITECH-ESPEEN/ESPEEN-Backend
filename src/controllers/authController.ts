@@ -58,10 +58,8 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
   });
 });
 
-//Get user profile : /api/profile
-export const getUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {  
-  const userUid = req.user?.uid;
-  const user = await User.findOne({ uid: userUid });
+export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
+  const user = await User.findById(req.user?._id);
 
   if (!user) {
     return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));

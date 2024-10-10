@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -24,7 +24,7 @@ interface IUser extends Document {
   comparePassword(reqPassword: string): Promise<boolean>;
 }
 
-const userSchema: Schema<IUser> = new mongoose.Schema(
+const userSchema = new mongoose.Schema<IUser>(
   {
     uid: {
       type: Number,
@@ -130,4 +130,4 @@ userSchema.methods.getJWTToken = function () {
 
 const User = mongoose.model<IUser>("User", userSchema);
 
-export default User;
+export default mongoose.model("User", userSchema);
