@@ -1,32 +1,44 @@
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+
 import ErrorHandler from "../utils/errorHandler";
 import catchAsyncErrors from "./catchAsyncErrors";
-import User from "../models/userModel";
-import { NextFunction, Request, Response } from "express";
+import User, { UserRole } from "../models/userModel";
 
-interface AuthentificatedRequest extends Request {
-  user?: any;
+interface AuthenticatedRequest extends Request {
+  user?: {
+    uid: number;
+    role: UserRole;
+  };
 }
 
-export const isAuthentificatedUser = catchAsyncErrors(async (req: AuthentificatedRequest, res, next) => {
-  const { token } = req.cookies;
+//Check if user is auth
+export const isAuthentificatedUser = catchAsyncErrors(async (req: AuthenticatedRequest, res, next) => {
+  const {token} = req.cookies;
   if (!token) {
-    return next(new ErrorHandler("Login required to access this resource", 401));
+      return next(new ErrorHandler("Login required to access this resource", 401));
   }
 
-  if (!process.env.JWT_SECRET) {
+  if (!process.env.SECRET_KEY) {
     return next(new ErrorHandler("JWT secret is not defined", 500));
   }
-  const decoded = jwt.verify(token, process.env.JWT_SECRET) as jwt.JwtPayload;
-  req.user = await User.findById(decoded.id);
+  const decoded = jwt.verify(token, process.env.SECRET_KEY) as jwt.JwtPayload;
+  const user = await User.findOne({uid: decoded.uid});
+  if (!user) {
+    return next(new ErrorHandler(`User with ID ${decoded.uid} not found`, 404));
+  }
+  req.user = {
+    uid: user.uid,
+    role: user.role
+  };
 
   next();
 });
 
-export const authorizeRoles = (...roles: string[]) => {
-  return (req: AuthentificatedRequest, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.user?.role)) {
-      return next(new ErrorHandler(`Role '${req.user.role}' is not allowed to access this ressource`, 403));
+export const authorizeRoles = (...roles: UserRole[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new ErrorHandler(`Role '${req.user?.role}' is not allowed to access this resource`, 403));
     }
     next();
   };

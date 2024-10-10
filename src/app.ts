@@ -27,6 +27,8 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
+dotenv.config({ path: "src/config/config.env" });
+
 connectDB();
 
 app.use(express.json({ limit: "10mb" }));
