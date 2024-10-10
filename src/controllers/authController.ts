@@ -64,6 +64,7 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
 });
 
 export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
+  const userUid = req.user?.uid;
   const user = await User.findById(req.user?._id);
 
   if (!user) {
