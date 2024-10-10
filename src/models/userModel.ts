@@ -68,22 +68,18 @@ const userSchema = new mongoose.Schema<IUser>(
     phone: {
       type: String,
       maxLength: [20, "User phone number cannot exceed 20 characters"],
-      required: false,
     },
     location: {
       type: String,
       maxLength: [100, "User location cannot exceed 100 characters"],
-      required: false,
     },
     avatar: {
       public_id: { type: String },
       url: { type: String },
-      required: false,
     },
     actionReaction: {
       type: Map,
       of: String,
-      required: false,
     },
   },
   { timestamps: true }
@@ -127,7 +123,5 @@ userSchema.methods.getJWTToken = function () {
     expiresIn: process.env.JWT_EXPIRES_TIME,
   });
 };
-
-const User = mongoose.model<IUser>("User", userSchema);
 
 export default mongoose.model("User", userSchema);
