@@ -6,25 +6,20 @@
     "current_time": 1531680780,
     "services": [
       {
-        "name": "facebook",
+        "name": "google",
         "actions": [
           {
-            "name": "new_message_in_group",
-            "description": "A new message is posted in the group"
-          },
-          {
-            "name": "new_message_inbox",
-            "description": "A new private message is received by the user"
-          },
-          {
-            "name": "new_like",
-            "description": "The user gains a like from one of their messages"
+            "name": "recep_mail",
+            "description": "The user receives an email"
           }
-        ],
+        ]
+      },
+      {
+        "name": "openweather",
         "reactions": [
           {
-            "name": "like_message",
-            "description": "The user likes a message"
+            "name": "meteo",
+            "description": "The user receives the weather forecast"
           }
         ]
       }
