@@ -16,16 +16,25 @@ export function serviceRouter() {
     const routerAPI = new APIRouter();
 
     setInterval(async () => {
-        if (!isAuthToGoogle) {
-            console.log("Not authentificated to Google");
-            return;
-        }
+        // ? Get all users for (let i = 0; database.longueur; i++)
+        // database.find(uid = i)
         let user_services: string[] | undefined = ["google.gmail.recep_email", "meteo"]; // ! Ask to DB
+        for user_service in user_services {
+            switch (user_services[i].split("."))
+            case "google":
+                if (!isAuthToGoogle) {
+                    return;
+                }
+                break;
+            case "meteo":
+                break;
+            default:
+                return;
         let results: any | undefined = undefined;
 
-        // if (user_services === [] /*|| user_services === undefined */) {
-        //     return;
-        // }
+        if (user_services === [] /*|| user_services === undefined */) {
+            return;
+        }
         for (let i = 0; i < user_services.length; i++) {
             let service: string[] = user_services[i].split(".");
             if (results === undefined) {

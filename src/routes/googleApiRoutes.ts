@@ -21,14 +21,14 @@ export let isAuthToGoogle = false;
 interface API {
   ApiMap: Map<string, API>;
 
-  redirect_to(name: string, routes: string, params?: any): any;
+  redirect_to(name: string, routes: string, params?: any, token ?:any): any;
 }
 
 class GmailRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
   RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails]]);
 
-  async redirect_to(name: string, routes: string, params?: any) {
+  async redirect_to(name: string, routes: string, params?: any, token?: any) {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
@@ -40,7 +40,7 @@ class GmailRoutes implements API {
 class DriveRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, token?: any) {
     return null;
   }
 }
@@ -51,7 +51,7 @@ class GoogleApi implements API {
     ["drive", new DriveRoutes()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, token?: any) {
     // ? Perhaps add security to verify if user is auth to DB
     if (!this.ApiMap.has(name)) return null;
     if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params);
@@ -65,7 +65,7 @@ export class APIRouter implements API {
     ["meteo", new MeteoApi()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, token?: any) {
     const service: string[] = routes.split(".");
 
     if (!this.ApiMap.has(name)) return null;
@@ -81,7 +81,7 @@ const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.C
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
 
-async function checkEmails() {
+async function checkEmails(token: any) {
   let response;
   if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
     console.log("Token expiré, il faut le rafraîchir.");
@@ -91,7 +91,7 @@ async function checkEmails() {
   try {
     const config = {
       headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
@@ -110,7 +110,7 @@ async function checkEmails() {
     previousMessageIds = currentMessageIds.filter((id) => id !== null && id !== undefined) as string[];
     const config = {
       headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
