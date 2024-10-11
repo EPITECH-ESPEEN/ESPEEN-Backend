@@ -17,8 +17,6 @@ import { createAndUpdateApiKey } from "../controllers/apiKeyController";
 import axios, { create } from "axios";
 import jwt from "jsonwebtoken";
 
-export let isAuthToGoogle = false;
-
 interface API {
   ApiMap: Map<string, API>;
 
@@ -102,6 +100,7 @@ const googleRouter = express.Router();
 dotenv.config();
 
 const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback");
+//TODO : use process.env is better here for links
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
 
@@ -115,7 +114,7 @@ async function checkEmails() {
   try {
     const config = {
       headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`,
+        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`, //TODO : db
         Accept: "application/json",
       },
     };
@@ -125,16 +124,16 @@ async function checkEmails() {
   }
 
   const messages = response.data.messages || [];
-  const currentMessageIds = messages.map((message) => message.id);
+  const currentMessageIds = messages.map((message: any) => message.id);
 
-  const newMessages = currentMessageIds.filter((id) => id && !previousMessageIds.includes(id));
+  const newMessages = currentMessageIds.filter((id: any) => id && !previousMessageIds.includes(id));
 
   if (newMessages.length > 0) {
     console.log(`New emails found: ${newMessages.length}`);
-    previousMessageIds = currentMessageIds.filter((id) => id !== null && id !== undefined) as string[];
+    previousMessageIds = currentMessageIds.filter((id: any) => id !== null && id !== undefined) as string[];
     const config = {
       headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`,
+        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`, //TODO : db
         Accept: "application/json",
       },
     };
@@ -172,24 +171,22 @@ googleRouter.get("/oauth2callback", async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code as string);
     oauth2Client.setCredentials(tokens);
 
-    const token = req.cookies.token;
-    if (!token) {
+    const user = req.cookies.token;
+    if (!user) {
       res.status(401).send("Unauthenticated");
       return;
     }
-
     if (!process.env.JWT_SECRET) {
       res.status(500).send("JWT secret is not defined");
       return;
     }
+    const decodedToken = jwt.verify(user, process.env.JWT_SECRET) as unknown as { user_id: string };
+    const user_uid = decodedToken.user_id;
 
-    const user = jwt.verify(token, process.env.JWT_SECRET) as unknown as { user_id: string };
-
-    isAuthToGoogle = true;
     res.send("Authentification réussie, tu peux fermer cette fenêtre.");
     console.log(tokens);
     if (tokens.access_token && tokens.refresh_token) {
-      createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user.user_id, "google");
+      createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
     } else {
       console.error("Access token or refresh token is missing");
       res.status(500).send("Internal Server Error");
