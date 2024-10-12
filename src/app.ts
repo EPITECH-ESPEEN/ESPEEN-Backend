@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import connectDB from "./config/dataBase";
 import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
-import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
@@ -14,13 +13,6 @@ import { serviceRouter } from "./utils/serviceRouter";
 
 dotenv.config();
 const app = express();
-
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true,
-  optionSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
 
 process.on("uncaughtException", (err) => {
   console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${err} ${err.stack}`);

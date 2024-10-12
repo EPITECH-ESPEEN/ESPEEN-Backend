@@ -100,7 +100,7 @@ export class APIRouter implements API {
 const googleRouter = express.Router();
 dotenv.config();
 
-const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback");
+] const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
 //TODO : use process.env is better here for links
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
@@ -184,6 +184,7 @@ googleRouter.get("/auth", (req, res) => {
     scope: SCOPES,
   });
   res.redirect(authUrl);
+  console.log("Redirected to auth URL");
 });
 
 googleRouter.get("/oauth2callback", async (req, res) => {
@@ -202,11 +203,10 @@ googleRouter.get("/oauth2callback", async (req, res) => {
       res.status(500).send("JWT secret is not defined");
       return;
     }
-    const decodedToken = jwt.verify(user, process.env.JWT_SECRET) as unknown as { user_id: string };
-    const user_uid = decodedToken.user_id;
-
-    res.send("Authentification réussie, tu peux fermer cette fenêtre.");
-    console.log(tokens);
+    const decodedToken = jwt.verify(user, process.env.JWT_SECRET) as unknown as { uid: string };
+    const user_uid = decodedToken.uid;
+    //TODO: localhost need to be retreived from process.env.DOMAIN_NAME
+    res.redirect(`http://localhost:3000/services`); //.send("Authentication successful, you can close this window.");
     if (tokens.access_token && tokens.refresh_token) {
       createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
     } else {

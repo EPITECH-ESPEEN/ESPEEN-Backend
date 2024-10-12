@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema<IUser>(
     password: {
       type: String,
       required: [true, "User password is required"],
-      minLength: [8, "User password must be longer than 8 characters"],
+      minLength: [14, "User password must be longer than 8 characters"],
       validate: {
         validator: function (password: string) {
           return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{14,}$/.test(password);
@@ -122,13 +122,14 @@ userSchema.methods.comparePassword = async function (reqPassword: string): Promi
 
 //Return JWT
 userSchema.methods.getJWTToken = function () {
-  if (!process.env.SECRET_KEY) {
-    throw new Error("SECRET_KEY is not defined");
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined");
   }
-  return jwt.sign({ uid: this.uid, role: this.role }, process.env.SECRET_KEY, {
+  return jwt.sign({ uid: this.uid, role: this.role }, process.env.JWT_SECRET, {
     //TODO: Setting the expire time to a hardcoded number (JWT_EXPIRES_TIME) is irrelevent bcaus you can't check when it's been set
     //SEARCH: Epoch time
-    expiresIn: Math.floor(Date.now() / 1000) + (Number(process.env.JWT_EXPIRES_TIME) || 0),
+    // mb
+    expiresIn: Number(process.env.JWT_EXPIRES_TIME) || 0,
   });
 };
 

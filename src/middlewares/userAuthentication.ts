@@ -15,22 +15,22 @@ interface AuthenticatedRequest extends Request {
 //TODO Authentificated is either brand new, or not a real word
 //Check if user is auth
 export const isAuthenticatedUser = catchAsyncErrors(async (req: AuthenticatedRequest, res, next) => {
-  const {token} = req.cookies;
+  const { token } = req.cookies;
   if (!token) {
-      return next(new ErrorHandler("Login required to access this resource", 401));
+    return next(new ErrorHandler("Login required to access this resource", 401));
   }
 
-  if (!process.env.SECRET_KEY) {
+  if (!process.env.JWT_SECRET) {
     return next(new ErrorHandler("JWT secret is not defined", 500));
   }
-  const decoded = jwt.verify(token, process.env.SECRET_KEY) as jwt.JwtPayload;
-  const user = await User.findOne({uid: decoded.uid});
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as jwt.JwtPayload;
+  const user = await User.findOne({ uid: decoded.uid });
   if (!user) {
     return next(new ErrorHandler(`User with ID ${decoded.uid} not found`, 404));
   }
   req.user = {
     uid: user.uid,
-    role: user.role
+    role: user.role,
   };
 
   next();

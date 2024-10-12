@@ -21,6 +21,7 @@ interface AuthenticatedRequest extends Request {
 // Register a new user : /api/register
 export const registerUser = catchAsyncErrors(async (req: Request<{}, {}, RegisterUserBody>, res: Response, next: NextFunction) => {
   const { username, email, password } = req.body;
+  console.log(req.body);
   const user = await User.create({
     username,
     email,
@@ -45,7 +46,6 @@ export const loginUser = catchAsyncErrors(async (req: Request, res: Response, ne
   if (!isPasswordMatched) {
     return next(new ErrorHandler("Invalid username or password", 401));
   }
-
   sendToken(user, 200, res);
 });
 
@@ -65,7 +65,7 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
 
 export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
   const userUid = req.user?.uid;
-  const user = await User.findById(req.user?._id);
+  const user = await User.findOne({ uid: userUid });
 
   if (!user) {
     return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));
