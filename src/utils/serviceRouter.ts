@@ -50,13 +50,18 @@ export function serviceRouter() {
             return;
         }
         let results: any | undefined = undefined;
+        let access_token: string | undefined = undefined;
 
         for (let key in user_services) {
+          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: user_services[key].split(".")[0] }).select("api_key");
+          if (apiKeyDoc) {
+            access_token = apiKeyDoc.api_key;
+          }
           let service: string[] = user_services[key].split(".");
           if (results === undefined) {
             results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""));
           } else {
-            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""), results);
+            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""), results, access_token);
           }
         }
       }

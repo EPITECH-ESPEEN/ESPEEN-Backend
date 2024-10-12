@@ -15,18 +15,19 @@ import { google } from "googleapis";
 import dotenv, { config } from "dotenv";
 import { createAndUpdateApiKey } from "../controllers/apiKeyController";
 import axios, { create } from "axios";
+import apiKeyModels from "../models/apiKeyModels";
 import jwt from "jsonwebtoken";
 
 interface API {
   ApiMap: Map<string, API>;
 
-  redirect_to(name: string, routes: string, params?: any): any;
+  redirect_to(name: string, routes: string, params?: any, access_token?: string): any;
 }
 
 class MeteoApi implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
 
-  async redirect_to(name: string, routes: string, params?: any) {
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     if (params === undefined) return null;
     try {
       const url = `https://api.weatherapi.com/v1/current.json?q=${params}&lang=fr&key=${process.env.WEATHER_API_KEY}`;
@@ -50,7 +51,7 @@ class GmailRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
   RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails]]);
 
-  async redirect_to(name: string, routes: string, params?: any) {
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
@@ -62,7 +63,7 @@ class GmailRoutes implements API {
 class DriveRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     return null;
   }
 }
@@ -73,10 +74,10 @@ class GoogleApi implements API {
     ["drive", new DriveRoutes()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     // ? Perhaps add security to verify if user is auth to DB
     if (!this.ApiMap.has(name)) return null;
-    if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params);
+    if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token);
     return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""));
   }
 }
@@ -87,11 +88,11 @@ export class APIRouter implements API {
     ["meteo", new MeteoApi()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     const service: string[] = routes.split(".");
 
     if (!this.ApiMap.has(name)) return null;
-    if (params) return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""), params);
+    if (params) return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""), params, access_token);
     return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""));
   }
 }
@@ -104,54 +105,75 @@ const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.C
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
 
-async function checkEmails() {
-  let response;
+async function checkEmails(user_uid: string) {
+  const tokens = await apiKeyModels.findOne({ user: user_uid, service: "google" });
+
+  if (!tokens || !tokens.api_key) {
+    console.error("No tokens found for user:", user_uid);
+    return null;
+  }
+
+  let accessToken = tokens.api_key;
+  let refreshToken = tokens.refresh_token;
+
+  // Check if access token is expired
   if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
-    console.log("Token expiré, il faut le rafraîchir.");
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    oauth2Client.setCredentials(credentials);
-  }
-  try {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`, //TODO : db
-        Accept: "application/json",
-      },
-    };
-    response = await axios.get("https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=INBOX&q=is:unread", config);
-  } catch (error) {
-    console.error("Error while fetching messages:", error);
-  }
+    console.log("Access token expired, refreshing...");
 
-  const messages = response.data.messages || [];
-  const currentMessageIds = messages.map((message: any) => message.id);
+    try {
+      // Refresh the token using the stored refresh token
+      let { token: accessToken } = await oauth2Client.getAccessToken();
+      accessToken = oauth2Client.credentials.access_token;
 
-  const newMessages = currentMessageIds.filter((id: any) => id && !previousMessageIds.includes(id));
+      await apiKeyModels.updateOne({ user: user_uid, service: "google" }, { access_token: accessToken, refresh_token: refreshToken });
 
-  if (newMessages.length > 0) {
-    console.log(`New emails found: ${newMessages.length}`);
-    previousMessageIds = currentMessageIds.filter((id: any) => id !== null && id !== undefined) as string[];
-    const config = {
-      headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_API_KEY}`, //TODO : db
-        Accept: "application/json",
-      },
-    };
-    const msg = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${currentMessageIds[0]}`, config);
-    const payload = msg.data.payload;
-    const part = payload.parts?.find((part) => part.mimeType === "text/plain");
-    const body = part?.body?.data;
-
-    if (body) {
-      const decodedBody = Buffer.from(body, "base64").toString("utf-8");
-      console.log("Email content:", decodedBody);
-      return decodedBody;
-    } else {
-      console.log("No plain text body found in this email.");
+      oauth2Client.setCredentials({ access_token: accessToken });
+    } catch (error) {
+      console.error("Error refreshing token:", error);
       return null;
     }
   } else {
-    console.log("No new emails.");
+    oauth2Client.setCredentials({ access_token: accessToken });
+  }
+
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+    };
+    const response = await axios.get("https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=INBOX&q=is:unread", config);
+
+    const data = response.data as { messages: any[] };
+    const messages = data.messages || [];
+    const currentMessageIds = messages.map((message: any) => message.id);
+
+    const newMessages = currentMessageIds.filter((id: any) => id && !previousMessageIds.includes(id));
+
+    if (newMessages.length > 0) {
+      console.log(`New emails found: ${newMessages.length}`);
+      previousMessageIds = currentMessageIds.filter((id: any) => id !== null && id !== undefined) as string[];
+
+      const msg = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${newMessages[0]}`, config);
+      const payload = (msg.data as any).payload;
+      const part = payload.parts?.find((part: { mimeType: string }) => part.mimeType === "text/plain");
+      const body = part?.body?.data;
+
+      if (body) {
+        const decodedBody = Buffer.from(body, "base64").toString("utf-8");
+        console.log("Email content:", decodedBody);
+        return decodedBody;
+      } else {
+        console.log("No plain text body found in this email.");
+        return null;
+      }
+    } else {
+      console.log("No new emails.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error while fetching messages:", error);
     return null;
   }
 }
