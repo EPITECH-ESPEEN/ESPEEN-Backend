@@ -10,190 +10,213 @@
 `--' `--'  `--' `--' `--' '--'`-------' `------'     `-----' `------'     `-----'     `-----' `--' '--' `--'  `-'
 */
 
-import express, {response} from "express";
-import { google } from 'googleapis';
-import dotenv, {config} from "dotenv";
-import axios from 'axios';
-
-export let isAuthToGoogle = false;
+import express, { response } from "express";
+import { google } from "googleapis";
+import dotenv, { config } from "dotenv";
+import { createAndUpdateApiKey } from "../controllers/apiKeyController";
+import axios, { create } from "axios";
+import apiKeyModels from "../models/apiKeyModels";
+import jwt from "jsonwebtoken";
 
 interface API {
-    ApiMap: Map<string, API>;
+  ApiMap: Map<string, API>;
 
-    redirect_to(name: string, routes: string, params?: any): any;
+  redirect_to(name: string, routes: string, params?: any, access_token?: string): any;
 }
 
 class MeteoApi implements API {
-    ApiMap: Map<string, API> = new Map<string, API>();
+  ApiMap: Map<string, API> = new Map<string, API>();
 
-    async redirect_to(name: string, routes: string, params?: any) {
-        if (params === undefined)
-            return null;
-        try {
-            const url = `https://api.weatherapi.com/v1/current.json?q=${params}&lang=fr&key=${process.env.WEATHER_API_KEY}`;
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+    if (params === undefined) return null;
+    try {
+      const url = `https://api.weatherapi.com/v1/current.json?q=${params}&lang=fr&key=${process.env.WEATHER_API_KEY}`;
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
 
-            const weatherData = await response.json();
-            console.log(weatherData);
-            return weatherData;
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
+      const weatherData = await response.json();
+      console.log(weatherData);
+      return weatherData;
+    } catch (error) {
+      console.error(error);
+      return null;
     }
+  }
 }
 
 class GmailRoutes implements API {
-    ApiMap: Map<string, API> = new Map<string, API>();
-    RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails]]);
+  ApiMap: Map<string, API> = new Map<string, API>();
+  RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails]]);
 
-    async redirect_to(name: string, routes: string, params?: any) {
-        if (!this.RouteMap.has(routes))
-            return null;
-        const route = this.RouteMap.get(name);
-        if (route === undefined)
-            return null;
-        if (params)
-            return await route(params);
-        return await route();
-    }
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+    if (!this.RouteMap.has(routes)) return null;
+    const route = this.RouteMap.get(name);
+    if (route === undefined) return null;
+    if (params) return await route(params);
+    return await route();
+  }
 }
 
 class DriveRoutes implements API {
-    ApiMap: Map<string, API> = new Map<string, API>();
+  ApiMap: Map<string, API> = new Map<string, API>();
 
-    redirect_to(name: string, routes: string, params?: any) {
-        return null;
-    }
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+    return null;
+  }
 }
 
 class GoogleApi implements API {
-    ApiMap: Map<string, API> = new Map<string, API>([
-        ["gmail", new GmailRoutes()],
-        ["drive", new DriveRoutes()]
-    ]);
+  ApiMap: Map<string, API> = new Map<string, API>([
+    ["gmail", new GmailRoutes()],
+    ["drive", new DriveRoutes()],
+  ]);
 
-    redirect_to(name: string, routes: string, params?: any) {
-        // ? Perhaps add security to verify if user is auth to DB
-        if (!this.ApiMap.has(name))
-            return null;
-        if (params)
-            return (this.ApiMap.get(name))?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params);
-        return (this.ApiMap.get(name))?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""));
-    }
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+    // ? Perhaps add security to verify if user is auth to DB
+    if (!this.ApiMap.has(name)) return null;
+    if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token);
+    return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""));
+  }
 }
 
 export class APIRouter implements API {
-    ApiMap: Map<string, API> = new Map<string, API>([
-        ["google", new GoogleApi()],
-        ["meteo", new MeteoApi()]
-    ]);
+  ApiMap: Map<string, API> = new Map<string, API>([
+    ["google", new GoogleApi()],
+    ["meteo", new MeteoApi()],
+  ]);
 
-    redirect_to(name: string, routes: string, params?: any) {
-        const service: string[] = routes.split(".");
+  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+    const service: string[] = routes.split(".");
 
-        if (!this.ApiMap.has(name))
-            return null;
-        if (params)
-            return (this.ApiMap.get(name))?.redirect_to(service[0], routes.replace(service[0] + ".", ""), params);
-        return (this.ApiMap.get(name))?.redirect_to(service[0], routes.replace(service[0] + ".", ""));
-    }
+    if (!this.ApiMap.has(name)) return null;
+    if (params) return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""), params, access_token);
+    return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""));
+  }
 }
 
 const googleRouter = express.Router();
 dotenv.config();
 
-const oauth2Client = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    'http://localhost:4242/api/oauth2callback'
-);
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+] const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
+//TODO : use process.env is better here for links
+const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
 
-async function checkEmails() {
-    let response;
-    if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
-        console.log('Token expiré, il faut le rafraîchir.');
-        const {credentials} = await oauth2Client.refreshAccessToken();
-        oauth2Client.setCredentials(credentials);
-    }
+async function checkEmails(user_uid: string) {
+  const tokens = await apiKeyModels.findOne({ user: user_uid, service: "google" });
+
+  if (!tokens || !tokens.api_key) {
+    console.error("No tokens found for user:", user_uid);
+    return null;
+  }
+
+  let accessToken = tokens.api_key;
+  let refreshToken = tokens.refresh_token;
+
+  // Check if access token is expired
+  if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
+    console.log("Access token expired, refreshing...");
+
     try {
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${process.env.GOOGLE_API_KEY}`,
-                'Accept': 'application/json',
-            }
-        };
-        response = await axios.get(
-            'https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=INBOX&q=is:unread',
-            config
-        );
+      // Refresh the token using the stored refresh token
+      let { token: accessToken } = await oauth2Client.getAccessToken();
+      accessToken = oauth2Client.credentials.access_token;
+
+      await apiKeyModels.updateOne({ user: user_uid, service: "google" }, { access_token: accessToken, refresh_token: refreshToken });
+
+      oauth2Client.setCredentials({ access_token: accessToken });
     } catch (error) {
-        console.error('Error while fetching messages:', error);
+      console.error("Error refreshing token:", error);
+      return null;
     }
+  } else {
+    oauth2Client.setCredentials({ access_token: accessToken });
+  }
 
-    const messages = response.data.messages || [];
-    const currentMessageIds = messages.map(message => message.id);
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+    };
+    const response = await axios.get("https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=INBOX&q=is:unread", config);
 
-    const newMessages = currentMessageIds.filter(id => id && !previousMessageIds.includes(id));
+    const data = response.data as { messages: any[] };
+    const messages = data.messages || [];
+    const currentMessageIds = messages.map((message: any) => message.id);
+
+    const newMessages = currentMessageIds.filter((id: any) => id && !previousMessageIds.includes(id));
 
     if (newMessages.length > 0) {
-        console.log(`New emails found: ${newMessages.length}`);
-        previousMessageIds = currentMessageIds.filter(id => id !== null && id !== undefined) as string[];
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${process.env.GOOGLE_API_KEY}`,
-                'Accept': 'application/json',
-            }
-        };
-        const msg = await axios.get(
-            `https://gmail.googleapis.com/gmail/v1/users/me/messages/${currentMessageIds[0]}`,
-            config
-        );
-        const payload = msg.data.payload;
-        const part = payload.parts?.find(part => part.mimeType === 'text/plain');
-        const body = part?.body?.data;
+      console.log(`New emails found: ${newMessages.length}`);
+      previousMessageIds = currentMessageIds.filter((id: any) => id !== null && id !== undefined) as string[];
 
-        if (body) {
-            const decodedBody = Buffer.from(body, 'base64').toString('utf-8');
-            console.log('Email content:', decodedBody);
-            return decodedBody;
-        } else {
-            console.log('No plain text body found in this email.');
-            return null;
-        }
-    } else {
-        console.log('No new emails.');
+      const msg = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${newMessages[0]}`, config);
+      const payload = (msg.data as any).payload;
+      const part = payload.parts?.find((part: { mimeType: string }) => part.mimeType === "text/plain");
+      const body = part?.body?.data;
+
+      if (body) {
+        const decodedBody = Buffer.from(body, "base64").toString("utf-8");
+        console.log("Email content:", decodedBody);
+        return decodedBody;
+      } else {
+        console.log("No plain text body found in this email.");
         return null;
+      }
+    } else {
+      console.log("No new emails.");
+      return null;
     }
+  } catch (error) {
+    console.error("Error while fetching messages:", error);
+    return null;
+  }
 }
 
-googleRouter.get('/auth', (req, res) => {
-    const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: SCOPES,
-    });
-    res.redirect(authUrl);
+googleRouter.get("/auth", (req, res) => {
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: SCOPES,
+  });
+  res.redirect(authUrl);
+  console.log("Redirected to auth URL");
 });
 
 googleRouter.get("/oauth2callback", async (req, res) => {
-    const code = req.query.code;
+  const code = req.query.code;
 
-    if (code) {
-        const {tokens} = await oauth2Client.getToken(code as string);
-        oauth2Client.setCredentials(tokens);
+  if (code) {
+    const { tokens } = await oauth2Client.getToken(code as string);
+    oauth2Client.setCredentials(tokens);
 
-        isAuthToGoogle = true;
-        res.send('Authentification réussie, tu peux fermer cette fenêtre.');
-        // setInterval(async () => checkEmails(oauth2Client), 5000);
-    } else {
-        res.status(400).send('Code de validation manquant');
+    const user = req.cookies.token;
+    if (!user) {
+      res.status(401).send("Unauthenticated");
+      return;
     }
+    if (!process.env.JWT_SECRET) {
+      res.status(500).send("JWT secret is not defined");
+      return;
+    }
+    const decodedToken = jwt.verify(user, process.env.JWT_SECRET) as unknown as { uid: string };
+    const user_uid = decodedToken.uid;
+    //TODO: localhost need to be retreived from process.env.DOMAIN_NAME
+    res.redirect(`http://localhost:3000/services`); //.send("Authentication successful, you can close this window.");
+    if (tokens.access_token && tokens.refresh_token) {
+      createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
+    } else {
+      console.error("Access token or refresh token is missing");
+      res.status(500).send("Internal Server Error");
+    }
+    // setInterval(async () => checkEmails(oauth2Client), 5000);
+  } else {
+    res.status(400).send("Code de validation manquant");
+  }
 });
 
 export default googleRouter;

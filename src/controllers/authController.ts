@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 import ErrorHandler from "../utils/errorHandler";
-import User, {UserRole} from "../models/userModel";
+import User, { UserRole } from "../models/userModel";
 import sendToken from "../utils/sendToken";
 
 interface RegisterUserBody {
@@ -59,12 +59,42 @@ export const logoutUser = catchAsyncErrors(async (req: Request, res: Response, n
 });
 
 export const getUserProfile = catchAsyncErrors(async (req: any, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.user?._id);
+  const userUid = req.user?.uid;
+  const user = await User.findOne({ uid: userUid });
 
   if (!user) {
     return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));
   }
+  const { password, ...clearedUser } = user;
+
   res.status(200).json({
-    user,
+    clearedUser,
+  });
+});
+
+export const setUserProfile = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const userUid = req.user?.uid;
+  const updates = req.body;
+
+  const user = await User.findOne({ uid: userUid });
+
+  if (!user) {
+    return next(new ErrorHandler(`User with ID ${userUid} not found`, 404));
+  }
+
+  const forbiddenFields = ["uid", "role"];
+  forbiddenFields.map((x) => {
+    if (updates[x]) return next(new ErrorHandler(`User tried to change ${x}. This is not permitted`, 400));
+  });
+
+  Object.assign(user, updates);
+  await user.save();
+
+  const { password, ...clearedUser } = user;
+
+  res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user: clearedUser,
   });
 });
