@@ -17,7 +17,7 @@ interface IUser extends Document {
     public_id: string;
     url: string;
   };
-  actionReaction: { [key: string]: string };
+  actionReaction: string[][];
   user_token?: string;
 }
 
@@ -62,8 +62,7 @@ const userSchema = new mongoose.Schema<IUser>(
       url: { type: String },
     },
     actionReaction: {
-      type: Map,
-      of: String,
+      type: [[String]],
     },
     user_token: {
       type: String,
