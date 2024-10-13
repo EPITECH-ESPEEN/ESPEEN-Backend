@@ -40,8 +40,8 @@ export function serviceRouter() {
       for (let user_service in user_routes) {
         switch (user_routes[user_service].split(".")[0]) {
           case "google":
-            if (!await isAuthToGoogle(users[i].uid)) {
-            console.log("google");
+            if (!(await isAuthToGoogle(users[i].uid))) {
+              console.log("google");
               return;
             }
             break;
@@ -68,5 +68,5 @@ export function serviceRouter() {
         }
       }
     }
-  }, 5000);
+  }, 30000);
 }
