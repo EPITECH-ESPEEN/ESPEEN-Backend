@@ -78,7 +78,8 @@ export const createAndUpdateApiKey = async (api_key: string, refresh_token: stri
   const existingApiKey = await ApiKey.findOne({ user_id, service });
   if (existingApiKey) {
     existingApiKey.api_key = api_key;
-    existingApiKey.refresh_token = refresh_token;
+    if (refresh_token !== "")
+      existingApiKey.refresh_token = refresh_token;
     await existingApiKey.save();
     return existingApiKey;
   } else {
