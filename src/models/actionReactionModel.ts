@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 interface IActionReaction extends Document {
+  id: number;
   name: string;
   action_reaction: boolean;
   id_service: number;
@@ -9,6 +10,11 @@ interface IActionReaction extends Document {
 
 const actionReactionSchema: Schema<IActionReaction> = new mongoose.Schema(
   {
+    id: {
+      type: Number,
+      required: [true, "Action reaction id is required"],
+      unique: true,
+    },
     name: {
       type: String,
       required: [true, "Action reaction name is required"],

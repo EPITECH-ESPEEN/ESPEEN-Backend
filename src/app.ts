@@ -4,6 +4,7 @@ import connectDB from "./config/dataBase";
 import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
 import aboutJSON from "./routes/aboutJSON";
+import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
@@ -24,6 +25,7 @@ dotenv.config({ path: "src/config/config.env" });
 
 connectDB();
 
+app.use(cors({ origin: "http://localhost:3000", methods: ["GET", "POST", "DELETE", "PUT"] }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 

@@ -3,34 +3,31 @@ import ActionReaction from "../models/actionReactionModel";
 import ErrorHandler from "../utils/errorHandler";
 import { UserRole } from "../models/userModel";
 
-// Get all actionReactions : /api/actionReactions
+// Get all actionReactions : /api/actionReactionscondition
 export const getAllActionReactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const actionReactions = await ActionReaction.find();
-    res.status(200).json({
-      actionReactions,
-    });
+    const actionReactions = await ActionReaction.find({});
+    if (!actionReactions) {
+      return res.status(404).json({ message: "ActionReactions not found" });
+    }
+    return res.status(200).json({ actionReactions });
   } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    console.error("Error in /api/actionReactions route:", error);
+    return res.status(500).json({ error: "Failed to process ActionReactions" });
   }
 };
 
 // Get a actionReaction by id : /api/actionReactions/:id
 export const getActionReactionById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const actionReaction = await ActionReaction.findById(req.params.id);
+    const actionReaction = await ActionReaction.findOne({ id: req.params.id });
     if (!actionReaction) {
-      return next(new ErrorHandler("ActionReaction not found", 404));
+      return res.status(404).json({ message: "ActionReaction not found" });
     }
-    res.status(200).json({
-      actionReaction,
-    });
+    return res.status(200).json({ actionReaction });
   } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    console.error("Error in /api/actionReactions/:id route:", error);
+    return res.status(500).json({ error: "Failed to process ActionReaction" });
   }
 };
 

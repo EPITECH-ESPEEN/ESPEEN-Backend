@@ -1,6 +1,4 @@
 import mongoose, { Document } from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -69,7 +67,7 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     user_token: {
       type: String,
-    }
+    },
   },
   { timestamps: true }
 );
