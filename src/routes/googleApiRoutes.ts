@@ -17,8 +17,9 @@ import { createAndUpdateApiKey } from "../controllers/apiKeyController";
 import axios from "axios";
 import apiKeyModels from "../models/apiKeyModels";
 import jwt from "jsonwebtoken";
-import nodemailer from 'nodemailer';
-import fs from 'fs';
+import nodemailer from "nodemailer";
+import fs from "fs";
+import User from "../models/userModel";
 
 interface API {
   ApiMap: Map<string, API>;
@@ -50,14 +51,14 @@ class MeteoApi implements API {
 }
 
 async function sendEmails(message: any) {
-  const serviceAccount = JSON.parse(fs.readFileSync('espeen-ez-o7-creds.json', 'utf-8'));
+  const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
   const tokens = await apiKeyModels.findOne({ user: message.user_uid, service: "google" });
 
   const auth = new google.auth.JWT({
     email: serviceAccount.client_email,
     key: serviceAccount.private_key,
-    scopes: ['https://www.googleapis.com/auth/gmail.send'],
-    subject: 'email@utilisateur.com',
+    scopes: ["https://www.googleapis.com/auth/gmail.send"],
+    subject: "email@utilisateur.com",
   });
   const accessToken = await auth.getAccessToken();
 
@@ -70,17 +71,13 @@ async function sendEmails(message: any) {
     ${message.data}
     `.trim();
 
-  const encodedMessage = Buffer.from(email)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+  const encodedMessage = Buffer.from(email).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+  const url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
   const config = {
     headers: {
       Authorization: `Bearer ${accessToken.token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   };
 
@@ -90,15 +87,18 @@ async function sendEmails(message: any) {
 
   try {
     const response = await axios.post(url, data, config);
-    console.log('Email envoyé avec succès !', response.data);
+    console.log("Email envoyé avec succès !", response.data);
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'email :', error.response ? error.response.data : error.message);
+    console.error("Erreur lors de l'envoi de l'email :", error.response ? error.response.data : error.message);
   }
 }
 
 class GmailRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
-  RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails], ["send", sendEmails]]);
+  RouteMap: Map<string, Function> = new Map<string, Function>([
+    ["recep_email", checkEmails],
+    ["send", sendEmails],
+  ]);
 
   async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     if (!this.RouteMap.has(routes)) return null;
@@ -149,7 +149,7 @@ export class APIRouter implements API {
 const googleRouter = express.Router();
 dotenv.config();
 
-const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
+const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:8080/api/google/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
 //TODO : use process.env is better here for links
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
@@ -227,7 +227,7 @@ async function checkEmails(user_uid: string) {
   }
 }
 
-googleRouter.get("/auth", (req, res) => {
+googleRouter.get("/google/auth", (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
@@ -236,34 +236,32 @@ googleRouter.get("/auth", (req, res) => {
   console.log("Redirected to auth URL");
 });
 
-googleRouter.get("/oauth2callback", async (req, res) => {
+googleRouter.get("/google/oauth2callback", async (req, res) => {
   const code = req.query.code;
 
   if (code) {
     const { tokens } = await oauth2Client.getToken(code as string);
     oauth2Client.setCredentials(tokens);
 
-    const user = req.cookies.token;
-    if (!user) {
-      res.status(401).send("Unauthenticated");
-      return;
+    const authHeader = req.cookies.authToken;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Authorization header is missing" });
     }
-    if (!process.env.JWT_SECRET) {
-      res.status(500).send("JWT secret is not defined");
-      return;
+    const userToken = await User.findOne({ user_token: authHeader });
+    if (!userToken) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
-    const decodedToken = jwt.verify(user, process.env.JWT_SECRET) as unknown as { uid: string };
-    const user_uid = decodedToken.uid;
-    //TODO: localhost need to be retreived from process.env.DOMAIN_NAME
-    res.redirect(`http://localhost:3000/services`); //.send("Authentication successful, you can close this window.");
+    const user_uid = userToken.uid;
+    res.redirect(`http://localhost:3000/services`);
     if (tokens.access_token && tokens.refresh_token) {
       createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
+      return;
     } else {
       console.error("Access token or refresh token is missing");
-      res.status(500).send("Internal Server Error");
+      return res.status(500).send("Internal Server Error");
     }
   } else {
-    res.status(400).send("Code de validation manquant");
+    return res.status(400).send("Code de validation manquant");
   }
 });
 

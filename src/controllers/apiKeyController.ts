@@ -74,7 +74,7 @@ export const updateApiKey = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const createAndUpdateApiKey = async (api_key: string, refresh_token: string, user_id: string, service: string) => {
+export const createAndUpdateApiKey = async (api_key: string, refresh_token: string, user_id: number, service: string) => {
   const existingApiKey = await ApiKey.findOne({ user_id, service });
   if (existingApiKey) {
     existingApiKey.api_key = api_key;
