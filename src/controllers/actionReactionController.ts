@@ -6,7 +6,7 @@ import { UserRole } from "../models/userModel";
 // Get all actionReactions : /api/actionReactions
 export const getAllActionReactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const actionReactions = await ActionReaction.find();
+    const actionReactions = await ActionReaction.find({});
     res.status(200).json({
       actionReactions,
     });
@@ -20,7 +20,7 @@ export const getAllActionReactions = async (req: Request, res: Response, next: N
 // Get a actionReaction by id : /api/actionReactions/:id
 export const getActionReactionById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const actionReaction = await ActionReaction.findById(req.params.id);
+    const actionReaction = await ActionReaction.find({ user_id: req.params.id });
     if (!actionReaction) {
       return next(new ErrorHandler("ActionReaction not found", 404));
     }
@@ -57,7 +57,7 @@ export const updateActionReaction = async (req: Request, res: Response, next: Ne
     if (!req.user || req.user.role !== UserRole.ADMIN) {
       return next(new ErrorHandler("Unauthenticated", 401));
     }
-    const actionReaction = await ActionReaction.findByIdAndUpdate(req.params.id, req.body, {
+    const actionReaction = await ActionReaction.findOneAndUpdate({ user_id: req.body.id }, req.body, {
       new: true,
       runValidators: true,
     });
@@ -80,7 +80,7 @@ export const deleteActionReaction = async (req: Request, res: Response, next: Ne
     if (!req.user || req.user.role !== UserRole.ADMIN) {
       return next(new ErrorHandler("Unauthenticated", 401));
     }
-    const actionReaction = await ActionReaction.findByIdAndDelete(req.params.id);
+    const actionReaction = await ActionReaction.findOneAndDelete({ user_id: req.params.id });
     if (!actionReaction) {
       return next(new ErrorHandler("ActionReaction not found", 404));
     }
