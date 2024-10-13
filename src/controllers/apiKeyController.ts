@@ -6,7 +6,7 @@ import User from "../models/userModel";
 // Get all apiKeys : /api/apiKeys
 export const getAllApiKeys = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const apiKeys = await ApiKey.find();
+    const apiKeys = await ApiKey.find({});
     res.status(200).json({
       apiKeys,
     });
@@ -37,7 +37,7 @@ export const getApiKeyById = async (req: Request, res: Response, next: NextFunct
 // Create a new apiKey : /api/apiKeys
 export const createApiKey = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await User.findById({ user_id: req.body.user });
+    const user = await User.findOne({ user_id: req.body.user });
 
     if (!user) {
       return next(new ErrorHandler("User not found", 404));
@@ -56,7 +56,7 @@ export const createApiKey = async (req: Request, res: Response, next: NextFuncti
 // Update a apiKey by id : /api/apiKeys/:id
 export const updateApiKey = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await ApiKey.findByIdAndUpdate({ user_id: req.params.id }, req.body, {
+    const apiKey = await ApiKey.findOneAndUpdate({ user_id: req.params.id }, req.body, {
       new: true,
       runValidators: true,
       useFindAndModify: false,
