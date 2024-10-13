@@ -1,4 +1,4 @@
-}// import { Response } from "express";
+// import { Response } from "express";
 
 // export default (user: any, statusCode: number, res: Response) => {
 //   const token = user.getJWTToken();
