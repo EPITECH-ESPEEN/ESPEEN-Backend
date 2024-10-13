@@ -11,9 +11,9 @@
 */
 
 import express from "express";
-import {google} from "googleapis";
+import { google } from "googleapis";
 import dotenv from "dotenv";
-import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import { createAndUpdateApiKey } from "../controllers/apiKeyController";
 import axios from "axios";
 import apiKeyModels from "../models/apiKeyModels";
 import fs from "fs";
@@ -22,7 +22,7 @@ import User from "../models/userModel";
 interface API {
   ApiMap: Map<string, API>;
 
-  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid ?: string): any;
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string): any;
 }
 
 class MeteoApi implements API {
@@ -61,7 +61,7 @@ async function getUserEmail(user_uid: string) {
 
   let accessToken = tokens.api_key;
 
-  const url = 'https://www.googleapis.com/userinfo/v2/me';
+  const url = "https://www.googleapis.com/userinfo/v2/me";
   const config = {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -72,7 +72,7 @@ async function getUserEmail(user_uid: string) {
     const response = await axios.get(url, config);
     return response.data.email;
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'email :', error.response ? error.response.data : error.message);
+    console.error("Erreur lors de la récupération de l'email :", error.response ? error.response.data : error.message);
     return null;
   }
 }
@@ -94,9 +94,7 @@ async function sendEmails(message: any) {
     return null;
   }
 
-  const email = `To: ${email_u}\r\n` +
-    "Subject: Meteo de gulli\r\n\r\n" +
-    `${message.data}`;
+  const email = `To: ${email_u}\r\n` + "Subject: Meteo de gulli\r\n\r\n" + `${message.data}`;
 
   const encodedMessage = Buffer.from(email).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -179,12 +177,7 @@ dotenv.config();
 
 const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:8080/api/google/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
 //TODO : use process.env is better here for links
-const SCOPES = [
-  "https://www.googleapis.com/auth/gmail.readonly",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/userinfo.profile",
-  "https://www.googleapis.com/auth/gmail.send"
-];
+const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/gmail.send"];
 let previousMessageIds: string[] = [];
 
 async function checkEmails(user_uid: string) {
@@ -289,7 +282,9 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
     const user_uid = userToken.uid;
     res.redirect(`http://localhost:3000/services`);
     if (tokens.access_token) {
-      createAndUpdateApiKey(tokens.access_token, "" ,user_uid, "google");
+      if (tokens.refresh_token) {
+        await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
+      } else await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
       return;
     } else {
       console.error("Access token or refresh token is missing");
