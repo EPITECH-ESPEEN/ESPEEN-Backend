@@ -10,13 +10,15 @@
 `--' `--'  `--' `--' `--' '--'`-------' `------'     `-----' `------'     `-----'     `-----' `--' '--' `--'  `-'
 */
 
-import express, { response } from "express";
+import express from "express";
 import { google } from "googleapis";
-import dotenv, { config } from "dotenv";
+import dotenv from "dotenv";
 import { createAndUpdateApiKey } from "../controllers/apiKeyController";
-import axios, { create } from "axios";
+import axios from "axios";
 import apiKeyModels from "../models/apiKeyModels";
 import jwt from "jsonwebtoken";
+import nodemailer from 'nodemailer';
+import fs from 'fs';
 
 interface API {
   ApiMap: Map<string, API>;
@@ -47,9 +49,56 @@ class MeteoApi implements API {
   }
 }
 
+async function sendEmails(message: any) {
+  const serviceAccount = JSON.parse(fs.readFileSync('espeen-ez-o7-creds.json', 'utf-8'));
+  const tokens = await apiKeyModels.findOne({ user: message.user_uid, service: "google" });
+
+  const auth = new google.auth.JWT({
+    email: serviceAccount.client_email,
+    key: serviceAccount.private_key,
+    scopes: ['https://www.googleapis.com/auth/gmail.send'],
+    subject: 'email@utilisateur.com',
+  });
+  const accessToken = await auth.getAccessToken();
+
+  const email = `
+    From: "Espeen" <${serviceAccount.client_email}>
+    To: ${message.to}
+    Subject: ${message.obj}
+    Content-Type: text/plain; charset="UTF-8"
+
+    ${message.data}
+    `.trim();
+
+  const encodedMessage = Buffer.from(email)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+  const config = {
+    headers: {
+      Authorization: `Bearer ${accessToken.token}`,
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const data = {
+    raw: encodedMessage,
+  };
+
+  try {
+    const response = await axios.post(url, data, config);
+    console.log('Email envoyé avec succès !', response.data);
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi de l\'email :', error.response ? error.response.data : error.message);
+  }
+}
+
 class GmailRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
-  RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails]]);
+  RouteMap: Map<string, Function> = new Map<string, Function>([["recep_email", checkEmails], ["send", sendEmails]]);
 
   async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
     if (!this.RouteMap.has(routes)) return null;
@@ -100,7 +149,7 @@ export class APIRouter implements API {
 const googleRouter = express.Router();
 dotenv.config();
 
-] const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
+const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:4242/api/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
 //TODO : use process.env is better here for links
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 let previousMessageIds: string[] = [];
@@ -213,7 +262,6 @@ googleRouter.get("/oauth2callback", async (req, res) => {
       console.error("Access token or refresh token is missing");
       res.status(500).send("Internal Server Error");
     }
-    // setInterval(async () => checkEmails(oauth2Client), 5000);
   } else {
     res.status(400).send("Code de validation manquant");
   }
