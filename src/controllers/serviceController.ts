@@ -32,14 +32,23 @@ export const getServiceById = async (req: Request, res: Response, next: NextFunc
 // Create a new service : /api/area
 export const makeArea = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    req.body.user = req.user?.uid;
-    const user = await User.findOne({ uid: req.body.user });
+    const Auth = req.headers.authorization;
+    if (!Auth) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const token = Auth.split(" ")[1];
+    const token_id = await User.findOne({ user_token: token });
+    if (!token_id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const user = await User.findOne({ uid: token_id?.uid });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
     const actionReaction = [["google.gmail.recep_email", "meteo", "google.gmail.send"]];
-    user.actionReaction = actionReaction || user.actionReaction;
+    user.actionReaction = actionReaction;
     user.save();
     return res.status(200).json({ user });
   } catch (error) {
