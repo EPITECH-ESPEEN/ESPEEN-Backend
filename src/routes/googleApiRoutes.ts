@@ -24,13 +24,13 @@ import User from "../models/userModel";
 interface API {
   ApiMap: Map<string, API>;
 
-  redirect_to(name: string, routes: string, params?: any, access_token?: string): any;
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid ?: string): any;
 }
 
 class MeteoApi implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
 
-  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
     if (params === undefined) return null;
     try {
       const url = `https://api.weatherapi.com/v1/current.json?q=${params}&lang=fr&key=${process.env.WEATHER_API_KEY}`;
@@ -42,6 +42,9 @@ class MeteoApi implements API {
 
       const weatherData = await response.json();
       console.log(weatherData);
+      let message = {};
+      message["user_uid"] = user_uid;
+      message["data"] = `La température actuelle à ${weatherData.location.name} est de ${weatherData.current.temp_c}°C.`;
       return weatherData;
     } catch (error) {
       console.error(error);
@@ -50,22 +53,61 @@ class MeteoApi implements API {
   }
 }
 
+async function getUserEmail(user_uid: string) {
+  const tokens = await apiKeyModels.findOne({ user: user_uid, service: "google" });
+
+  if (!tokens || !tokens.api_key) {
+    console.error("No tokens found for user:", user_uid);
+    return null;
+  }
+
+  let accessToken = tokens.api_key;
+
+  const url = 'https://www.googleapis.com/userinfo/v2/me';
+  const config = {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+
+  try {
+    const response = await axios.get(url, config);
+    const email = response.data.email;
+    return email;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'email :', error.response ? error.response.data : error.message);
+    return null;
+  }
+}
+
 async function sendEmails(message: any) {
   const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
   const tokens = await apiKeyModels.findOne({ user: message.user_uid, service: "google" });
+
+  const email_u = await getUserEmail(message.user_uid);
+
+  if (!tokens || !tokens.api_key) {
+    console.error("No tokens found for user:", message.user_uid);
+    return null;
+  }
+
+  if (!email_u) {
+    console.error("No email found for user:", message.user_uid);
+    return null;
+  }
 
   const auth = new google.auth.JWT({
     email: serviceAccount.client_email,
     key: serviceAccount.private_key,
     scopes: ["https://www.googleapis.com/auth/gmail.send"],
-    subject: "email@utilisateur.com",
+    subject: email_u,
   });
   const accessToken = await auth.getAccessToken();
 
   const email = `
     From: "Espeen" <${serviceAccount.client_email}>
-    To: ${message.to}
-    Subject: ${message.obj}
+    To: ${email_u}
+    Subject: Meteo de gulli
     Content-Type: text/plain; charset="UTF-8"
 
     ${message.data}
@@ -100,10 +142,11 @@ class GmailRoutes implements API {
     ["send", sendEmails],
   ]);
 
-  async redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
+    if (name === "recep_email") return await route(user_uid);
     if (params) return await route(params);
     return await route();
   }
@@ -112,7 +155,7 @@ class GmailRoutes implements API {
 class DriveRoutes implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
 
-  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
     return null;
   }
 }
@@ -123,7 +166,7 @@ class GoogleApi implements API {
     ["drive", new DriveRoutes()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
     // ? Perhaps add security to verify if user is auth to DB
     if (!this.ApiMap.has(name)) return null;
     if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token);
@@ -137,7 +180,7 @@ export class APIRouter implements API {
     ["meteo", new MeteoApi()],
   ]);
 
-  redirect_to(name: string, routes: string, params?: any, access_token?: string) {
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
     const service: string[] = routes.split(".");
 
     if (!this.ApiMap.has(name)) return null;
@@ -151,11 +194,17 @@ dotenv.config();
 
 const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "http://localhost:8080/api/google/oauth2callback"); // const {GoogleAuth} = require('google-auth-library') ?
 //TODO : use process.env is better here for links
-const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/userinfo.profile"
+];
 let previousMessageIds: string[] = [];
 
 async function checkEmails(user_uid: string) {
   const tokens = await apiKeyModels.findOne({ user: user_uid, service: "google" });
+
+  console.log("Checking emails for user:", user_uid);
 
   if (!tokens || !tokens.api_key) {
     console.error("No tokens found for user:", user_uid);

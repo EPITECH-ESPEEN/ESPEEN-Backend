@@ -29,7 +29,6 @@ export async function isAuthToGoogle(user_uid: number) {
 
 export function serviceRouter() {
   const routerAPI = new APIRouter();
-
   setInterval(async () => {
     const users = await User.find({});
     for (let i = 0; i < users.length; i++) {
@@ -40,7 +39,7 @@ export function serviceRouter() {
       for (let user_service in user_services) {
         switch (user_service.split(".")[0]) {
           case "google":
-            if (!isAuthToGoogle) {
+            if (!await isAuthToGoogle(i)) {
               return;
             }
             break;
@@ -59,9 +58,9 @@ export function serviceRouter() {
           }
           let service: string[] = user_services[key].split(".");
           if (results === undefined) {
-            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""));
+            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""), undefined, access_token, users[i].uid);
           } else {
-            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""), results, access_token);
+            results = await routerAPI.redirect_to(service[0], user_services[key].replace(service[0] + ".", ""), results, access_token, users[i].uid);
           }
         }
       }

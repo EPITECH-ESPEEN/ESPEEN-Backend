@@ -40,12 +40,12 @@ app.use(errorMiddleware);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
-  serviceRouter();
 });
 
 const server = app.listen(process.env.PORT, () => {
   console.log("\x1b[34m%s\x1b[0m", `[INFO] Server started on the PORT: ${process.env.PORT} in ${process.env.NODE_ENV} mode`);
   console.log(`Running at http://localhost:${process.env.PORT}`);
+  serviceRouter();
 });
 
 process.on("unhandledRejection", (err) => {
