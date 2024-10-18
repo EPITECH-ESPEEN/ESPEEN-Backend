@@ -10,38 +10,63 @@
 `--' `--'  `--' `--' `--' '--'`-------' `------'     `-----' `------'     `-----'     `-----' `--' '--' `--'  `-'
 */
 
-import {APIRouter, isAuthToGoogle} from "../routes/googleApiRoutes";
+import { APIRouter } from "../routes/googleApiRoutes";
+import User from "../models/userModel";
+import apiKeyModels from "../models/apiKeyModels";
+
+export async function isAuthToGoogle(user_uid: number) {
+  const tokens = await apiKeyModels.find({ user_id: user_uid });
+  if (tokens.length === 0) {
+    return false;
+  }
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].service === "google") {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function serviceRouter() {
-    const routerAPI = new APIRouter();
-
-    setInterval(async () => {
-        // ? Get all users for (let i = 0; database.longueur; i++)
-        // database.find(uid = i)
-        let user_services: string[] | undefined = ["google.gmail.recep_email", "meteo"]; // ! Ask to DB
-        for user_service in user_services {
-            switch (user_services[i].split("."))
-            case "google":
-                if (!isAuthToGoogle) {
-                    return;
-                }
-                break;
-            case "meteo":
-                break;
-            default:
-                return;
-        let results: any | undefined = undefined;
-
-        if (user_services === [] /*|| user_services === undefined */) {
+  const routerAPI = new APIRouter();
+  setInterval(async () => {
+    const users = await User.find({});
+    for (let i = 0; i < users.length; i++) {
+      let user_services: { [key: string]: string } | undefined = users[i].actionReaction;
+      if (user_services === undefined) {
+        return;
+      }
+      const user_routes = user_services[0];
+      for (let user_service in user_routes) {
+        switch (user_routes[user_service].split(".")[0]) {
+          case "google":
+            if (!(await isAuthToGoogle(users[i].uid))) {
+              console.log("google");
+              return;
+            }
+            break;
+          case "meteo":
+            break;
+          default:
             return;
         }
-        for (let i = 0; i < user_services.length; i++) {
-            let service: string[] = user_services[i].split(".");
-            if (results === undefined) {
-                results = await routerAPI.redirect_to(service[0], user_services[i].replace(service[0] + ".", ""));
-            } else {
-                results = await routerAPI.redirect_to(service[0], user_services[i].replace(service[0] + ".", ""), results);
-            }
+        console.log(user_routes);
+        let results: any | undefined = undefined;
+        let access_token: string | undefined = undefined;
+
+        for (let key in user_routes) {
+          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: user_routes[key].split(".")[0] }).select("api_key");
+          if (apiKeyDoc) {
+            access_token = apiKeyDoc.api_key;
+          }
+          let service: string[] = user_routes[key].split(".");
+          if (results === undefined) {
+            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), undefined, access_token, users[i].uid);
+          } else {
+            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), results, access_token, users[i].uid);
+          }
         }
-    }, 5000);
+      }
+    }
+  }, 30000);
 }

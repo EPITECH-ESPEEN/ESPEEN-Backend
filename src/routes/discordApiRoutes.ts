@@ -3,7 +3,7 @@ import passport from "passport";
 import { Strategy as DiscordStrategy } from "passport-discord";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
-import { MeteoApi } from "./meteoApiRoutes";
+import { MeteoApi } from "./googleApiRoutes";
 import session from "express-session";
 
 export let isAuthToDiscord = false;

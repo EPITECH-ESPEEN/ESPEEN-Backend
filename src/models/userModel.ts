@@ -1,6 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import mongoose, { Document } from "mongoose";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -19,12 +17,11 @@ interface IUser extends Document {
     public_id: string;
     url: string;
   };
-  actionReaction: { [key: string]: string };
-  getJWTToken(): string;
-  comparePassword(reqPassword: string): Promise<boolean>;
+  actionReaction: string[][];
+  user_token?: string;
 }
 
-const userSchema: Schema<IUser> = new mongoose.Schema(
+const userSchema = new mongoose.Schema<IUser>(
   {
     uid: {
       type: Number,
@@ -47,24 +44,11 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       required: [true, "User email is required"],
       unique: true,
-      validate: {
-        validator: function (email: string) {
-          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w{2,3})+$/.test(email);
-        },
-        message: "Invalid email format",
-      },
     },
     password: {
       type: String,
       required: [true, "User password is required"],
       minLength: [8, "User password must be longer than 8 characters"],
-      validate: {
-        validator: function (password: string) {
-          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
-        },
-        message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-      },
-      select: false,
     },
     phone: {
       type: String,
@@ -80,55 +64,16 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       public_id: { type: String },
       url: { type: String },
-      required: false,
     },
     actionReaction: {
-      type: Map,
-      of: String,
-      required: false,
+      type: [[String]],
+    },
+    user_token: {
+      type: String,
     },
   },
   { timestamps: true }
 );
-
-// Define UID before validation
-userSchema.pre<IUser>("validate", async function (next) {
-  if (this.isNew) {
-    try {
-      const highestUidUser = await (this.constructor as mongoose.Model<IUser>).findOne().sort("-uid").exec();
-
-      this.uid = highestUidUser ? highestUidUser.uid + 1 : 1;
-    } catch (error) {
-      return next(new Error("Failed to generate UID"));
-    }
-  }
-  next();
-});
-
-// Password encryption
-userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-// Compare user password
-userSchema.methods.comparePassword = async function (reqPassword: string): Promise<boolean> {
-  return bcrypt.compare(reqPassword, this.password);
-};
-
-//Return JWT
-userSchema.methods.getJWTToken = function () {
-  if (!process.env.SECRET_KEY) {
-    throw new Error("SECRET_KEY is not defined");
-  }
-  return jwt.sign({ uid: this.uid, role: this.role }, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_TIME,
-  });
-};
 
 const User = mongoose.model<IUser>("User", userSchema);
 
