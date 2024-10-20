@@ -8,10 +8,10 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
-import googleRouter from "./routes/googleApiRoutes";
+import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
-import { serviceRouter } from "./utils/serviceRouter";
-import discordRouter from "./routes/discordApiRoutes";
+import discordRouter from "./services/discordServices";
+import { serviceRouter } from "./services/API";
 
 const app = express();
 
@@ -38,7 +38,7 @@ app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
-app.use("/api/discord", discordRouter);
+app.use("/api", discordRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);
 
