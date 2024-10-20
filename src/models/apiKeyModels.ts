@@ -1,16 +1,17 @@
 import mongoose from "mongoose";
 
 export interface IApiKey extends mongoose.Document {
-  user_id: string;
+  user_id: number;
   api_key: string;
   refresh_token: string;
   service: string;
+  webhook?: string;
 }
 
 const apiKeySchema = new mongoose.Schema(
   {
     user_id: {
-      type: String,
+      type: Number,
       required: [true, "User id is required"],
     },
     api_key: {
@@ -25,6 +26,10 @@ const apiKeySchema = new mongoose.Schema(
       type: String,
       required: [true, "Service is required"],
     },
+    webhook: {
+        type: String,
+        required: [false, "Webhooks is not required"],
+    }
   },
   { timestamps: true }
 );

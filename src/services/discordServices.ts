@@ -8,51 +8,55 @@ import {Strategy as DiscordStrategy} from "passport-discord";
 import session from "express-session";
 import passport from "passport";
 import User from "../models/userModel";
+import ApiKey from "../models/apiKeyModels";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {isAuthenticatedUser} from "../middlewares/userAuthentication";
 
-export const discordMessageWebhook = catchAsyncErrors(async (req, res, next) => {
-  const { message, webhookUrl } = req.body;
-  if (!message || !webhookUrl) {
-    return next(new ErrorHandler("Missing message or webhookUrl", 400));
-  }
-  const response = await fetch(webhookUrl, {
+export const discordMessageWebhook = async (message: any) => {
+  if (message === undefined) return null;
+  const uid: number = message.user_uid;
+  const users = await ApiKey.findOne({ user_id: uid, service: "discord" });
+  const response = await fetch(users.webhook, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ content: message }),
+    body: JSON.stringify({ content: message.data }),
   });
   if (!response.ok) {
-    return next(new ErrorHandler("Error while sending message to Discord", 500));
+    return console.log("Error while sending message to Discord");
   }
-  res.status(200).json({ success: true });
-});
+  return console.log("Message sent to Discord");
+};
 
 export let isAuthToDiscord = false;
 
-export class DiscordApi implements API {
+export class DiscordWebhookApi implements API {
   ApiMap: Map<string, API> = new Map<string, API>();
+  RouteMap: Map<string, Function> = new Map<string, Function>([
+    ["send", discordMessageWebhook],
+  ]);
 
-  async redirect_to(name: string, routes: string, params?: any) {
-    if (!params) return null;
-    try {
-      const url = `https://discord.com/api/v9/users/@me`;
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+    if (!this.RouteMap.has(routes)) return null;
+    const route = this.RouteMap.get(name);
+    if (route === undefined) return null;
+    if (name === "send_message") return await route(user_uid);
+    if (params) return await route(params);
+    return await route();
+  }
+}
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${params}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-      const discordData = await response.json();
-      return discordData;
-    } catch (error) {
-      console.error(error);
-    }
-    return null;
+export class DiscordApi implements API {
+  ApiMap: Map<string, API> = new Map<string, API>([
+    ["webhook", new DiscordWebhookApi()],
+  ]);
+
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+    // ? Perhaps add security to verify if user is auth to DB
+    if (!this.ApiMap.has(name)) return null;
+    if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token, user_uid);
+    return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), undefined, access_token, user_uid);
   }
 }
 
