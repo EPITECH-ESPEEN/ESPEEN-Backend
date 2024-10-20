@@ -3,7 +3,6 @@ import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 
 export const discordMessageWebhook = catchAsyncErrors(async (req, res, next) => {
   const { message, webhookUrl } = req.body;
-  console.log(req.body);
   if (!message || !webhookUrl) {
     return next(new ErrorHandler("Missing message or webhookUrl", 400));
   }

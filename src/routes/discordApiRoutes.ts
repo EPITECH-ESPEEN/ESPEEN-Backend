@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import fetch from "node-fetch";
 import { MeteoApi } from "./googleApiRoutes";
 import session from "express-session";
+import User from "../models/userModel";
+import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 
 export let isAuthToDiscord = false;
 
@@ -20,7 +22,6 @@ class DiscordApi implements API {
   async redirect_to(name: string, routes: string, params?: any) {
     if (!params) return null;
     try {
-      console.log("Discord API redirect_to:", name, routes, params);
       const url = `https://discord.com/api/v9/users/@me`;
 
       const response = await fetch(url, {
@@ -32,7 +33,6 @@ class DiscordApi implements API {
         throw new Error(`Error: ${response.statusText}`);
       }
       const discordData = await response.json();
-      console.log(discordData);
       return discordData;
     } catch (error) {
       console.error(error);
@@ -68,7 +68,6 @@ const discordStrategy = new DiscordStrategy(
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      console.log("Discord profile:", profile);
       (profile as any).accessToken = accessToken;
       isAuthToDiscord = true;
       done(null, profile);
@@ -103,14 +102,42 @@ discordRouter.get("/auth", (req, res) => {
   passport.authenticate("discord")(req, res);
 });
 
-discordRouter.get(
-  "/callback",
-  passport.authenticate("discord", {
+discordRouter.get("/callback",  passport.authenticate("discord", {
     failureRedirect: "/login",
     session: true,
   }),
-  (req, res) => {
-    res.send("Authentication successful, you can close this window.");
+  async (req, res) => {
+    const tokens = req.user;
+
+    console.log("Access token:", tokens);
+    if (!tokens) {
+      return res.status(500).send("Internal Server Error");
+    }
+    const code = req.query.code;
+
+    if (code) {
+      const authHeader = req.cookies.authToken;
+      if (!authHeader) {
+        return res.status(401).json({ error: "Authorization header is missing" });
+      }
+      const userToken = await User.findOne({ user_token: authHeader });
+      if (!userToken) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const user_uid = userToken.uid;
+      res.redirect(`http://localhost:3000/services`);
+      if (tokens.accessToken) {
+        if (tokens.refreshToken) {
+          await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
+        } else await createAndUpdateApiKey(tokens.accessToken, "", user_uid, "discord");
+        return;
+      } else {
+        console.error("Access token or refresh token is missing");
+        return res.status(500).send("Internal Server Error");
+      }
+    } else {
+      return res.status(400).send("Code de validation manquant");
+    }
   }
 );
 

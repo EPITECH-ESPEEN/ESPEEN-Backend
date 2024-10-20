@@ -41,7 +41,6 @@ export function serviceRouter() {
         switch (user_routes[user_service].split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
-              console.log("google");
               return;
             }
             break;
@@ -50,7 +49,6 @@ export function serviceRouter() {
           default:
             return;
         }
-        console.log(user_routes);
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 

@@ -39,7 +39,6 @@ export class MeteoApi implements API {
       }
 
       const weatherData = await response.json();
-      console.log(weatherData);
       let message = {};
       message["user_uid"] = user_uid;
       message["data"] = `La température actuelle à ${weatherData.location.name} est de ${weatherData.current.temp_c}°C.`;
@@ -112,7 +111,6 @@ async function sendEmails(message: any) {
 
   try {
     const response = await axios.post(url, data, config);
-    console.log("Email envoyé avec succès !", response.data);
   } catch (error) {
     console.error("Erreur lors de l'envoi de l'email :", error.response ? error.response.data : error.message);
   }
@@ -183,8 +181,6 @@ let previousMessageIds: string[] = [];
 async function checkEmails(user_uid: string) {
   const tokens = await apiKeyModels.findOne({ user_id: user_uid, service: "google" });
 
-  console.log("Checking emails for user:", user_uid);
-
   if (!tokens || !tokens.api_key) {
     console.error("No tokens found for user:", user_uid);
     return null;
@@ -195,8 +191,6 @@ async function checkEmails(user_uid: string) {
 
   // Check if access token is expired
   if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
-    console.log("Access token expired, refreshing...");
-
     try {
       // Refresh the token using the stored refresh token
       let { token: accessToken } = await oauth2Client.getAccessToken();
@@ -229,7 +223,6 @@ async function checkEmails(user_uid: string) {
     const newMessages = currentMessageIds.filter((id: any) => id && !previousMessageIds.includes(id));
 
     if (newMessages.length > 0) {
-      console.log(`New emails found: ${newMessages.length}`);
       previousMessageIds = currentMessageIds.filter((id: any) => id !== null && id !== undefined) as string[];
 
       const msg = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${newMessages[0]}`, config);
@@ -239,14 +232,11 @@ async function checkEmails(user_uid: string) {
 
       if (body) {
         const decodedBody = Buffer.from(body, "base64").toString("utf-8");
-        console.log("Email content:", decodedBody);
         return decodedBody;
       } else {
-        console.log("No plain text body found in this email.");
         return null;
       }
     } else {
-      console.log("No new emails.");
       return null;
     }
   } catch (error) {
@@ -261,7 +251,6 @@ googleRouter.get("/google/auth", (req, res) => {
     scope: SCOPES,
   });
   res.redirect(authUrl);
-  console.log("Redirected to auth URL");
 });
 
 googleRouter.get("/google/oauth2callback", async (req, res) => {
