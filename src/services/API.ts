@@ -52,6 +52,8 @@ export function serviceRouter() {
             break;
           case "meteo":
             break;
+          case "discord":
+            break;
           default:
             return;
         }

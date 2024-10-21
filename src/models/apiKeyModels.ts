@@ -6,6 +6,7 @@ export interface IApiKey extends mongoose.Document {
   refresh_token: string;
   service: string;
   webhook?: string;
+  channel?: string;
 }
 
 const apiKeySchema = new mongoose.Schema(
@@ -29,7 +30,11 @@ const apiKeySchema = new mongoose.Schema(
     webhook: {
         type: String,
         required: [false, "Webhooks is not required"],
-    }
+    },
+    channel: {
+        type: String,
+        required: [false, "Channel is not required"],
+    },
   },
   { timestamps: true }
 );

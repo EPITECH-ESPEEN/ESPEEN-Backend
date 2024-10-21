@@ -1,5 +1,3 @@
-import ErrorHandler from "../utils/errorHandler";
-import catchAsyncErrors from "../middlewares/catchAsyncErrors";
 import {API} from "../utils/interfaces";
 import fetch from "node-fetch";
 import express from "express";
@@ -29,6 +27,54 @@ export const discordMessageWebhook = async (message: any) => {
   return console.log("Message sent to Discord");
 };
 
+let lastMessageId: string | null = null;
+
+export const checkMessageChannel = async (message: any) => {
+  if (message === undefined) return
+  const user = await ApiKey.findOne({ user_id: message, service: "discord" });
+  if (!user) return null;
+  const url = `https://discord.com/api/v9/channels/${user.channel}/messages`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      console.error("Failed to fetch messages from Discord channel");
+      return null;
+    }
+
+    const discordMessages = await response.json();
+    const newMessages = discordMessages.filter((msg: any) => msg.id > lastMessageId);
+
+    if (newMessages.length === 0) {
+      console.log("No new messages in the channel.");
+      return null;
+    }
+    if (lastMessageId === null) {
+      lastMessageId = discordMessages[newMessages.length - 1].id;
+      return null;
+    }
+
+    lastMessageId = newMessages[newMessages.length - 1].id;
+    const writersAndContents = newMessages
+        .map((msg: any) => `Writer: ${msg.author.username}, Content: ${msg.content}`)
+        .join(" \n ");
+    let messages = {
+      user_uid: message,
+      data: writersAndContents,
+    };
+    console.log("New messages from Discord channel:", messages);
+    return messages;
+  } catch (error) {
+    console.error("Error while fetching messages:", error);
+    return null;
+  }
+};
+
 export let isAuthToDiscord = false;
 
 export class DiscordWebhookApi implements API {
@@ -41,7 +87,23 @@ export class DiscordWebhookApi implements API {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
-    if (name === "send_message") return await route(user_uid);
+    if (name === "send") return await route(params);
+    if (params) return await route(params);
+    return await route();
+  }
+}
+
+export class DiscordBotApi implements API {
+  ApiMap: Map<string, API> = new Map<string, API>();
+  RouteMap: Map<string, Function> = new Map<string, Function>([
+    ["recep", checkMessageChannel],
+  ]);
+
+  async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+    if (!this.RouteMap.has(routes)) return null;
+    const route = this.RouteMap.get(name);
+    if (route === undefined) return null;
+    if (name === "recep") return await route(user_uid);
     if (params) return await route(params);
     return await route();
   }
@@ -50,6 +112,7 @@ export class DiscordWebhookApi implements API {
 export class DiscordApi implements API {
   ApiMap: Map<string, API> = new Map<string, API>([
     ["webhook", new DiscordWebhookApi()],
+    ["bot", new DiscordBotApi()],
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
