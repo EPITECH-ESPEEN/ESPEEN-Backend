@@ -239,7 +239,7 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
     }
 });
 
-googleRouter.delete("/google/auth", async (req, res) => {
+googleRouter.delete("/google/logout", async (req, res) => {
     try {
         const authHeader = req.headers.authorization?.split(" ")[1];
         if (!authHeader) {
