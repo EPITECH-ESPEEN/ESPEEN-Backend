@@ -5,6 +5,60 @@ import { Strategy as FacebookStrategy } from "passport-facebook";
 import { isAuthenticatedUser } from "../middlewares/userAuthentication";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import {API} from "../utils/interfaces";
+
+export const sendFacebookMessage = async (message: any) => {
+};
+
+export const checkFacebookMessage = async (message: any) => {
+
+};
+
+export class FacebookReactionApi implements API {
+    ApiMap: Map<string, API> = new Map<string, API>();
+    RouteMap: Map<string, Function> = new Map<string, Function>([
+        ["send_message", sendFacebookMessage],
+    ]);
+
+    async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+        if (!this.RouteMap.has(routes)) return null;
+        const route = this.RouteMap.get(name);
+        if (route === undefined) return null;
+        if (name === "send") return await route(params);
+        if (params) return await route(params);
+        return await route();
+    }
+}
+
+export class FacebookActionApi implements API {
+    ApiMap: Map<string, API> = new Map<string, API>();
+    RouteMap: Map<string, Function> = new Map<string, Function>([
+        ["receive_message", checkFacebookMessage],
+    ]);
+
+    async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+        if (!this.RouteMap.has(routes)) return null;
+        const route = this.RouteMap.get(name);
+        if (route === undefined) return null;
+        if (name === "recep") return await route(user_uid);
+        if (params) return await route(params);
+        return await route();
+    }
+}
+
+export class FacebookApi implements API {
+    ApiMap: Map<string, API> = new Map<string, API>([
+        ["action", new FacebookActionApi()],
+        ["reaction", new FacebookReactionApi()],
+    ]);
+
+    redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+        // ? Perhaps add security to verify if user is auth to DB
+        if (!this.ApiMap.has(name)) return null;
+        if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token, user_uid);
+        return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), undefined, access_token, user_uid);
+    }
+}
 
 const fbRouter = express();
 
