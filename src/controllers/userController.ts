@@ -1,4 +1,5 @@
 import User from "../models/userModel";
+import ApiKey from "../models/apiKeyModels";
 import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/errorHandler";
 
@@ -55,3 +56,17 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     return res.status(500).json({ error: "Failed to process user" });
   }
 };
+
+export const getUserServices = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return next(new ErrorHandler("User token not found", 404));
+    const user = await ApiKey.find({ user_token: token });
+    if (!user) return next(new ErrorHandler("User services not found", 404));
+    const services = user.map((service) => service.service);
+    return res.status(200).json({ services });
+  } catch (error) {
+    console.error("Error in /api/user/services route:", error);
+    return res.status(500).json({ error: "Failed to process user services" });
+  }
+}
