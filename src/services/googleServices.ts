@@ -1,4 +1,4 @@
-import apiKeyModels from "../models/apiKeyModels";
+import ApiKey from "../models/apiKeyModels";
 import axios from "axios";
 import fs from "fs";
 import {API} from "../utils/interfaces";
@@ -9,7 +9,7 @@ import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 
 export async function isAuthToGoogle(user_uid: number) {
-    const tokens = await apiKeyModels.find({ user_id: user_uid });
+    const tokens = await ApiKey.find({ user_id: user_uid });
     if (tokens.length === 0) {
         return false;
     }
@@ -22,7 +22,7 @@ export async function isAuthToGoogle(user_uid: number) {
 }
 
 export async function getUserEmail(user_uid: string) {
-    const tokens = await apiKeyModels.findOne({ user_id: user_uid, service: "google" });
+    const tokens = await ApiKey.findOne({ user_id: user_uid, service: "google" });
 
     if (!tokens || !tokens.api_key) {
         console.error("No tokens found for user:", user_uid);
@@ -50,7 +50,7 @@ export async function getUserEmail(user_uid: string) {
 export async function sendEmails(message: any) {
     if (message === undefined) return null;
     const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
-    const tokens = await apiKeyModels.findOne({ user_id: message.user_uid, service: "google" });
+    const tokens = await ApiKey.findOne({ user_id: message.user_uid, service: "google" });
 
     const email_u = await getUserEmail(message.user_uid);
 
@@ -90,8 +90,8 @@ export async function sendEmails(message: any) {
 export class GmailRoutes implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
     RouteMap: Map<string, Function> = new Map<string, Function>([
-        ["recep_email", checkEmails],
-        ["send", sendEmails],
+        ["receive_email", checkEmails],
+        ["send_email", sendEmails],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -134,7 +134,7 @@ const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.g
 let previousMessageIds: string[] = [];
 
 async function checkEmails(user_uid: string) {
-    const tokens = await apiKeyModels.findOne({ user_id: user_uid, service: "google" });
+    const tokens = await ApiKey.findOne({ user_id: user_uid, service: "google" });
 
     if (!tokens || !tokens.api_key) {
         console.error("No tokens found for user:", user_uid);
@@ -151,7 +151,7 @@ async function checkEmails(user_uid: string) {
             let { token: accessToken } = await oauth2Client.getAccessToken();
             accessToken = oauth2Client.credentials.access_token;
 
-            await apiKeyModels.updateOne({ user: user_uid, service: "google" }, { access_token: accessToken, refresh_token: refreshToken });
+            await ApiKey.updateOne({ user: user_uid, service: "google" }, { access_token: accessToken, refresh_token: refreshToken });
 
             oauth2Client.setCredentials({ access_token: accessToken });
         } catch (error) {
@@ -236,6 +236,23 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
         }
     } else {
         return res.status(400).send("Code de validation manquant");
+    }
+});
+
+googleRouter.delete("/google/auth", async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization?.split(" ")[1];
+        if (!authHeader) {
+            return res.status(401).json({error: "Authorization header is missing"});
+        }
+        const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "google"});
+        if (!userToken) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        return res.status(200).json({message: "User deleted successfully"});
+    } catch (error) {
+        console.error("Error in /api/google/auth route:", error);
+        return res.status(500).json({error: "Failed to process user"});
     }
 });
 
