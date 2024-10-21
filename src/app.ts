@@ -11,6 +11,7 @@ import serviceRoutes from "./routes/serviceRoutes";
 import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
 import discordRouter from "./services/discordServices";
+import facebookRouter from "./services/facebookServices";
 import { serviceRouter } from "./services/API";
 
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
 app.use("/api", discordRouter);
+app.use("/api", facebookRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);
 
