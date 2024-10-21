@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
+      required: true,
     },
     username: {
       type: String,
@@ -52,12 +53,15 @@ const userSchema = new mongoose.Schema<IUser>(
     phone: {
       type: String,
       maxLength: [20, "User phone number cannot exceed 20 characters"],
+      required: false,
     },
     location: {
       type: String,
       maxLength: [100, "User location cannot exceed 100 characters"],
+      required: false,
     },
     avatar: {
+      type: String,
       public_id: { type: String },
       url: { type: String },
     },

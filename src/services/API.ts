@@ -10,21 +10,27 @@
 `--' `--'  `--' `--' `--' '--'`-------' `------'     `-----' `------'     `-----'     `-----' `--' '--' `--'  `-'
 */
 
-import { APIRouter } from "../routes/googleApiRoutes";
-import User from "../models/userModel";
+import { API } from "../utils/interfaces";
+import { MeteoApi } from "./weatherServices";
+import { GoogleApi, isAuthToGoogle } from "./googleServices";
+import { DiscordApi } from "./discordServices";
 import apiKeyModels from "../models/apiKeyModels";
+import User from "../models/userModel";
 
-export async function isAuthToGoogle(user_uid: number) {
-  const tokens = await apiKeyModels.find({ user_id: user_uid });
-  if (tokens.length === 0) {
-    return false;
+export class APIRouter implements API {
+  ApiMap: Map<string, API> = new Map<string, API>([
+    ["google", new GoogleApi()],
+    ["meteo", new MeteoApi()],
+    ["discord", new DiscordApi()],
+  ]);
+
+  redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+    const service: string[] = routes.split(".");
+
+    if (!this.ApiMap.has(name)) return null;
+    if (params) return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""), params, access_token, user_uid);
+    return this.ApiMap.get(name)?.redirect_to(service[0], routes.replace(service[0] + ".", ""), undefined, access_token, user_uid);
   }
-  for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i].service === "google") {
-      return true;
-    }
-  }
-  return false;
 }
 
 export function serviceRouter() {
@@ -41,16 +47,16 @@ export function serviceRouter() {
         switch (user_routes[user_service].split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
-              console.log("google");
               return;
             }
             break;
           case "meteo":
             break;
+          case "discord":
+            break;
           default:
             return;
         }
-        console.log(user_routes);
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 
@@ -70,3 +76,4 @@ export function serviceRouter() {
     }
   }, 30000);
 }
+

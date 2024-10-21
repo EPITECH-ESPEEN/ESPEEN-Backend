@@ -5,9 +5,7 @@ import User from "../models/userModel";
 // Get all services : /api/services
 export const getAllServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log("Get all services");
     const services = await Service.find({});
-    console.log("Services:", services);
     return res.status(200).json({ services });
   } catch (error) {
     console.log("Error in /api/services route:", error);
@@ -18,7 +16,7 @@ export const getAllServices = async (req: Request, res: Response, next: NextFunc
 // Get a service by id : /api/services/:id
 export const getServiceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const service = await Service.findOne({ service_id: req.params.id });
+    const service = await Service.findOne({ uid: req.params.id });
     if (!service) {
       return res.status(404).json({ error: "Service not found" });
     }

@@ -86,7 +86,7 @@ export const createAndUpdateApiKey = async (api_key: string, refresh_token: stri
     const newApiKey = new ApiKey({
       user_id,
       api_key,
-      refresh_token,
+      refresh_token: refresh_token? refresh_token : "no refresh token",
       service,
     });
     await newApiKey.save();

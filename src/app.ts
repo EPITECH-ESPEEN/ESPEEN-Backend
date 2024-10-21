@@ -1,5 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
 import connectDB from "./config/dataBase";
 import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
@@ -9,19 +8,25 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
-import googleRouter from "./routes/googleApiRoutes";
+import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
-import { serviceRouter } from "./utils/serviceRouter";
+import discordRouter from "./services/discordServices";
+import { serviceRouter } from "./services/API";
 
 const app = express();
+
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
 
 process.on("uncaughtException", (err) => {
   console.log("\x1b[31m%s\x1b[0m", `[ERROR] ${err} ${err.stack}`);
   console.log("\x1b[34m%s\x1b[0m", "[INFO] Shutting down server due to Unhandled Promise Rejection");
   process.exit(1);
 });
-
-dotenv.config({ path: "src/config/config.env" });
 
 connectDB();
 
@@ -33,6 +38,7 @@ app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
+app.use("/api", discordRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);
 
