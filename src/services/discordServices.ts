@@ -165,12 +165,10 @@ passport.deserializeUser((user: any, done) => {
 
 passport.use(discordStrategy);
 
-// @ts-ignore
 discordRouter.get("/discord/auth", isAuthenticatedUser, (req, res) => {
   passport.authenticate("discord")(req, res);
 });
 
-// @ts-ignore
 discordRouter.get("/discord/callback", isAuthenticatedUser, passport.authenticate("discord", {
       failureRedirect: "/login",
       session: true,
@@ -210,7 +208,6 @@ discordRouter.get("/discord/callback", isAuthenticatedUser, passport.authenticat
     }
 );
 
-// @ts-ignore
 discordRouter.get("/discord/check-auth", isAuthenticatedUser, (req, res) => {
   if (isAuthToDiscord) {
     res.send("User is authenticated with Discord.");
@@ -219,7 +216,6 @@ discordRouter.get("/discord/check-auth", isAuthenticatedUser, (req, res) => {
   }
 });
 
-// @ts-ignore
 discordRouter.get("/discord/discord-data", isAuthenticatedUser, async (req, res) => {
   if (req.isAuthenticated() && req.user) {
     const accessToken = (req.user as any).accessToken;
