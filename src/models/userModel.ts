@@ -11,12 +11,6 @@ interface IUser extends Document {
   username: string;
   email: string;
   password: string;
-  phone?: string;
-  location?: string;
-  avatar?: {
-    public_id: string;
-    url: string;
-  };
   actionReaction: string[][];
   user_token?: string;
 }
