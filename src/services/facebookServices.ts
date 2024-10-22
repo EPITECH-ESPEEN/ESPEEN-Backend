@@ -10,8 +10,46 @@ import {API} from "../utils/interfaces";
 export const sendFacebookMessage = async (message: any) => {
 };
 
-export const checkFacebookMessage = async (message: any) => {
+let lastMessageId = "";
 
+export const checkFacebookMessage = async (message: any) => {
+    const url = `https://graph.facebook.com/v17.0/${process.env.FACEBOOK_PAGE_ID}/conversations?access_token=${process.env.FACEBOOK_PAGE_ACCESS_TOKEN}`;
+    try {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        if (!response.ok) {
+            console.error("Failed to fetch messages from Facebook Messenger");
+            return null;
+        }
+        const data = await response.json();
+        const conversations = data.data;
+        if (conversations && conversations.length > 0) {
+            for (let convo of conversations) {
+                const messagesUrl = `https://graph.facebook.com/v17.0/${convo.id}/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+                const messageResponse = await fetch(messagesUrl, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                const messageData = await messageResponse.json();
+                const latestMessage = messageData.data[0];
+                if (latestMessage.id !== lastMessageId) {
+                    lastMessageId = latestMessage.id;
+                    console.log("New message:", latestMessage);
+                    return latestMessage;
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error while fetching messages:", error);
+        return null;
+    }
+    return null;
 };
 
 export class FacebookReactionApi implements API {
