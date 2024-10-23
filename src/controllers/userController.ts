@@ -2,6 +2,7 @@ import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/errorHandler";
+import { getFormattedToken } from "../services/token";
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -71,10 +72,9 @@ export const getUserServices = async (req: Request, res: Response, next: NextFun
 
 export const getUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.headers.authorization;
+    const token = getFormattedToken(req);
     if (!token) return next(new ErrorHandler("User token not found", 404));
-    const formattedToken = token.replace("Bearer ", "");
-    const user = await User.findOne({ user_token: formattedToken });
+    const user = await User.findOne({ user_token: token });
     if (!user) return next(new ErrorHandler("User not found", 404));
     return res.status(200).json({ user });
     } catch (error) {
@@ -85,13 +85,14 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.headers.authorization;
+    const token = getFormattedToken(req);
     if (!token) return next(new ErrorHandler("User token not found", 404));
     const user = await User.findOne({user_token: token});
     if (!user) return next(new ErrorHandler("User not found", 404));
-    const {username, email} = req.body;
+    const {username, email, actionReaction} = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
+    user.actionReaction = actionReaction || user.actionReaction;
     await user.save();
     return res.status(200).json({user});
   } catch (error) {
@@ -102,7 +103,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const token = req.headers.authorization;
+        const token = getFormattedToken(req);
         if (!token) return next(new ErrorHandler("User token not found", 404));
         const user = await User.findOne({user_token: token});
         if (!user) return next(new ErrorHandler("User not found", 404));
