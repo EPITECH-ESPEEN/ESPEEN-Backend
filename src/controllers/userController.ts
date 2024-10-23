@@ -73,7 +73,8 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
   try {
     const token = req.headers.authorization;
     if (!token) return next(new ErrorHandler("User token not found", 404));
-    const user = await User.findOne({ user_token: token });
+    const formattedToken = token.replace("Bearer ", "");
+    const user = await User.findOne({ user_token: formattedToken });
     if (!user) return next(new ErrorHandler("User not found", 404));
     return res.status(200).json({ user });
     } catch (error) {
