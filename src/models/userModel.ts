@@ -44,21 +44,6 @@ const userSchema = new mongoose.Schema<IUser>(
       required: [true, "User password is required"],
       minLength: [8, "User password must be longer than 8 characters"],
     },
-    phone: {
-      type: String,
-      maxLength: [20, "User phone number cannot exceed 20 characters"],
-      required: false,
-    },
-    location: {
-      type: String,
-      maxLength: [100, "User location cannot exceed 100 characters"],
-      required: false,
-    },
-    avatar: {
-      type: String,
-      public_id: { type: String },
-      url: { type: String },
-    },
     actionReaction: {
       type: [[String]],
     },
