@@ -2,7 +2,7 @@ import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/errorHandler";
-import { getFormattedToken } from "../services/token";
+import { getFormattedToken } from "../utils/token";
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -58,7 +58,7 @@ export const deleteUserbyId = async (req: Request, res: Response, next: NextFunc
 
 export const getUserServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.headers.authorization;
+    const token = getFormattedToken(req);
     if (!token) return next(new ErrorHandler("User token not found", 404));
     const user = await ApiKey.find({ user_token: token });
     if (!user) return next(new ErrorHandler("User services not found", 404));
