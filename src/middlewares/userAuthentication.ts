@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import ErrorHandler from "../utils/errorHandler";
 import User, { UserRole } from "../models/userModel";
+import {getFormattedToken} from "../utils/token";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -10,10 +11,8 @@ interface AuthenticatedRequest extends Request {
 }
 
 export const isAuthenticatedUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) {
-    return next(new ErrorHandler("Login first to access this resource", 401));
-  }
+  const token = getFormattedToken(req);
+  if (!token) return next(new ErrorHandler("User token not found", 404));
   const user = User.findOne({ token });
   if (!user) {
     return next(new ErrorHandler("Invalid token. Please login again", 401));
