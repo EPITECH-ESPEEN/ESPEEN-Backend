@@ -60,9 +60,10 @@ export const getUserServices = async (req: Request, res: Response, next: NextFun
   try {
     const token = getFormattedToken(req);
     if (!token) return next(new ErrorHandler("User token not found", 404));
-    const user = await ApiKey.find({ user_token: token });
+    const user = await User.findOne({ user_token: token });
+    const key = await ApiKey.find({ user_id: user?.uid });
     if (!user) return next(new ErrorHandler("User services not found", 404));
-    const services = user.map((service) => service.service);
+    const services = key.map((service) => service.service);
     return res.status(200).json({ services });
   } catch (error) {
     console.error("Error in /api/user/services route:", error);
