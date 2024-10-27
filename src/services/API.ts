@@ -54,6 +54,8 @@ export function serviceRouter() {
             break;
           case "discord":
             break;
+          case "facebook":
+            break;
           default:
             return;
         }
@@ -74,6 +76,6 @@ export function serviceRouter() {
         }
       }
     }
-  }, 30000);
+  }, 5000);
 }
 
