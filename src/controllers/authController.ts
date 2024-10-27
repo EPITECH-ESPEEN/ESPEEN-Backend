@@ -94,12 +94,9 @@ export const setUserProfile = async (req: AuthenticatedRequest, res: Response, n
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const { username, email, phone, location } = req.body;
+    const { username, email } = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
-    user.phone = phone || user.phone;
-    user.location = location || user.location;
-    user.avatar = req.body.avatar || user.avatar;
     await user.save();
     return res.status(200).json({ user });
   } catch (error) {

@@ -1,11 +1,26 @@
 import { Request, Response, NextFunction } from "express";
 import Service from "../models/serviceModel";
+import ApiKey from "../models/apiKeyModels";
 import User from "../models/userModel";
+import {getFormattedToken} from "../utils/token";
+import ErrorHandler from "../utils/errorHandler";
 
 // Get all services : /api/services
 export const getAllServices = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const services = await Service.find({});
+    const token = getFormattedToken(req);
+    if (!token) return next(new ErrorHandler("User token not found", 404));
+    const user = await User.findOne({ user_token: token });
+    const subscribed_services = await ApiKey.find({ user_id: user.uid });
+    console.log("subscribed_services");
+    const map = subscribed_services.map((service) =>
+        service.service.charAt(0).toUpperCase() + service.service.slice(1)
+    );
+    console.log("map", map);
+    const services = await Service.find({ name: { $in: map } });
+    const not_subscribed_services = await Service.find({ name: { $nin: map } }).select("-actions -reactions");
+    services.push(...not_subscribed_services);
+    console.log("services", services);
     return res.status(200).json({ services });
   } catch (error) {
     console.log("Error in /api/services route:", error);
@@ -24,33 +39,5 @@ export const getServiceById = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     console.log("Error in /api/services/:id route:", error);
     return res.status(500).json({ error: "Failed to process service" });
-  }
-};
-
-// Create a new service : /api/area
-export const makeArea = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const Auth = req.headers.authorization;
-    if (!Auth) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    const token = Auth.split(" ")[1];
-    const token_id = await User.findOne({ user_token: token });
-    if (!token_id) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const user = await User.findOne({ uid: token_id?.uid });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const actionReaction = [["google.gmail.recep_email", "meteo", "google.gmail.send"]];
-    user.actionReaction = actionReaction;
-    user.save();
-    return res.status(200).json({ user });
-  } catch (error) {
-    console.log("Error in /api/area route:", error);
-    return res.status(500).json({ error: "Failed to process area" });
   }
 };
