@@ -14,7 +14,6 @@ import { API } from "../utils/interfaces";
 import { MeteoApi } from "./weatherServices";
 import { GoogleApi, isAuthToGoogle } from "./googleServices";
 import { DiscordApi } from "./discordServices";
-import { FacebookApi } from "./facebookServices";
 import apiKeyModels from "../models/apiKeyModels";
 import User from "../models/userModel";
 
@@ -23,7 +22,6 @@ export class APIRouter implements API {
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
-    ["facebook", new FacebookApi()],
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
