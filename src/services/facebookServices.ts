@@ -4,6 +4,7 @@ import passport from "passport";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import ApiKey from "../models/apiKeyModels";
 
 const fbRouter = express();
 
@@ -43,11 +44,11 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
 }), async (req, res) => {
     const { accessToken, refreshToken } = req.user as any;
     const code = req.query.code;
-    if (code) {
-        const authHeader = req.cookies.authToken;
-        if (!authHeader) {
-            return res.status(401).json({error: "Authorization header is missing"});
-        }
+    if (!code) {
+        return res.status(400).send("Validation code is missing");
+    }
+    const authHeader = req.cookies.authToken;
+    if (authHeader) {
         const userToken = await User.findOne({user_token: authHeader});
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
@@ -64,8 +65,17 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
             return res.status(500).send("Internal Server Error");
         }
     } else {
-        return res.status(400).send("Validation code is missing");
+        const db_token = await ApiKey.findOne({access_token: accessToken});
+        if (!db_token) {
+            return res.status(400).json({message: "Facebook account not linked"});
+        }
+        const user = await User.findOne({uid: db_token.user_id});
+        if (!user) {
+            return res.status(400).json({message: "User not found"});
+        }
+        return res.status(200).json({ access_token: user.user_token });
     }
+
 });
 
 export default fbRouter;
