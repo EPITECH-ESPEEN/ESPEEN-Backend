@@ -1,7 +1,6 @@
 import {API} from "../utils/interfaces";
 import fetch from "node-fetch";
 import express from "express";
-import dotenv from "dotenv";
 import {Strategy as DiscordStrategy} from "passport-discord";
 import session from "express-session";
 import passport from "passport";
@@ -124,7 +123,6 @@ export class DiscordApi implements API {
 }
 
 const discordRouter = express.Router();
-dotenv.config();
 
 const discordStrategy = new DiscordStrategy(
     {
