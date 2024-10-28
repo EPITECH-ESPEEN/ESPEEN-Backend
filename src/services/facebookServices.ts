@@ -55,7 +55,7 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
             return res.status(401).json({error: "Unauthorized"});
         }
         const user_uid = userToken.uid;
-        res.redirect(`http://localhost:3000/services`);
+        res.redirect(`${process.env.FRONT_URL}/services`);
         if (accessToken) {
             if (refreshToken) {
                 await createAndUpdateApiKey(accessToken, refreshToken, user_uid, "facebook");
@@ -78,13 +78,14 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
     }
 });
 
-fbRouter.delete('/facebook/logout', async (req, res) => {
+fbRouter.get('/facebook/logout', async (req, res) => {
     try {
         const authHeader = getFormattedToken(req);
         const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "facebook"});
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
+        res.redirect(`${process.env.FRONT_URL}/services`);
         return res.status(200).json({message: "User deleted successfully"});
     } catch (error) {
         console.error("Error in /api/facebook/logout route:", error);

@@ -8,6 +8,7 @@ import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {isAuthenticatedUser} from "../middlewares/userAuthentication";
+import {getFormattedToken} from "../utils/token";
 
 export const discordMessageWebhook = async (message: any) => {
   if (message === undefined) return null;
@@ -163,11 +164,11 @@ passport.deserializeUser((user: any, done) => {
 
 passport.use(discordStrategy);
 
-discordRouter.get("/discord/auth", isAuthenticatedUser, (req, res) => {
+discordRouter.get("/discord/auth", (req, res) => {
   passport.authenticate("discord")(req, res);
 });
 
-discordRouter.get("/discord/callback", isAuthenticatedUser, passport.authenticate("discord", {
+discordRouter.get("/discord/callback", passport.authenticate("discord", {
       failureRedirect: "/login",
       session: true,
     }),
@@ -190,7 +191,7 @@ discordRouter.get("/discord/callback", isAuthenticatedUser, passport.authenticat
           return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
-        res.redirect(`http://localhost:3000/services`);
+        res.redirect(`${process.env.FRONT_URL}/services`);
         if (tokens.accessToken) {
           if (tokens.refreshToken) {
             await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
@@ -206,7 +207,7 @@ discordRouter.get("/discord/callback", isAuthenticatedUser, passport.authenticat
     }
 );
 
-discordRouter.get("/discord/check-auth", isAuthenticatedUser, (req, res) => {
+discordRouter.get("/discord/check-auth", (req, res) => {
   if (isAuthToDiscord) {
     res.send("User is authenticated with Discord.");
   } else {
@@ -214,7 +215,7 @@ discordRouter.get("/discord/check-auth", isAuthenticatedUser, (req, res) => {
   }
 });
 
-discordRouter.get("/discord/discord-data", isAuthenticatedUser, async (req, res) => {
+discordRouter.get("/discord/discord-data", async (req, res) => {
   if (req.isAuthenticated() && req.user) {
     const accessToken = (req.user as any).accessToken;
 
@@ -235,16 +236,14 @@ discordRouter.get("/discord/discord-data", isAuthenticatedUser, async (req, res)
   }
 });
 
-discordRouter.delete("/discord/logout", isAuthenticatedUser, async (req, res) => {
+discordRouter.get("/discord/logout", async (req, res) => {
   try {
-    const authHeader = req.headers.authorization?.split(" ")[1];
-    if (!authHeader) {
-      return res.status(401).json({error: "Authorization header is missing"});
-    }
+    const authHeader = getFormattedToken(req);
     const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "discord"});
     if (!userToken) {
       return res.status(401).json({error: "Unauthorized"});
     }
+    res.redirect(`${process.env.FRONT_URL}/services`);
     return res.status(200).json({message: "User deleted successfully"});
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);
