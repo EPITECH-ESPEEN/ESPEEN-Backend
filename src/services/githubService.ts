@@ -17,6 +17,7 @@ import User from "../models/userModel";
 import {API} from "../utils/interfaces";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import ApiKey from "../models/apiKeyModels";
+import {getFormattedToken} from "../utils/token";
 
 const clientId = process.env.GITHUB_CLIENT_ID!;
 const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
@@ -117,6 +118,20 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Erreur lors de l'authentification GitHub :", error);
         res.status(500).send("Erreur lors de l'authentification GitHub");
+    }
+});
+
+githubRouter.get("/github/logout", async (req: Request, res: Response) => {
+    try {
+        const authHeader = getFormattedToken(req);
+        const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "github"});
+        if (!userToken) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        return res.status(200).json({message: "User deleted successfully"});
+    } catch (error) {
+        console.error("Error in /api/github/logout route:", error);
+        return res.status(500).json({error: "Failed to process user"});
     }
 });
 
