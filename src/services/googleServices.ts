@@ -119,7 +119,6 @@ export class GoogleApi implements API {
     ]);
 
     redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
-        // ? Perhaps add security to verify if user is auth to DB
         if (!this.ApiMap.has(name)) return null;
         if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token, user_uid);
         return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), undefined, access_token, user_uid);

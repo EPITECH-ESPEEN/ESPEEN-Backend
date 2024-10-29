@@ -16,12 +16,14 @@ import { GoogleApi, isAuthToGoogle } from "./googleServices";
 import { DiscordApi } from "./discordServices";
 import apiKeyModels from "../models/apiKeyModels";
 import User from "../models/userModel";
+import {GithubRoutes} from "./githubService";
 
 export class APIRouter implements API {
   ApiMap: Map<string, API> = new Map<string, API>([
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
+    ["github", new GithubRoutes()]
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
