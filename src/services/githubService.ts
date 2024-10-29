@@ -101,17 +101,14 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
 
         const { access_token } = tokenResponse.data;
 
-        console.dir("Access token:", tokenResponse);
-        console.log("Access token:", access_token);
         if (access_token) {
-            const userResponse = await axios.get("https://api.github.com/user", {
+            await axios.get("https://api.github.com/user", {
                 headers: {
                     Authorization: `Bearer ${access_token}`,
                 },
             });
-            const userData = userResponse.data;
             await createAndUpdateApiKey(access_token, "", user_uid, "github");
-            res.json({ message: "Authentification réussie", user: userData });
+            return;
         } else {
             res.status(500).send("Échec de l'obtention de l'access_token");
         }
