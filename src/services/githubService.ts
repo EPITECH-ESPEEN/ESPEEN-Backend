@@ -128,7 +128,7 @@ githubRouter.get("/github/logout", async (req: Request, res: Response) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        return res.status(200).json({message: "User deleted successfully"});
+        return res.status(200).redirect("http://localhost:3000/services");
     } catch (error) {
         console.error("Error in /api/github/logout route:", error);
         return res.status(500).json({error: "Failed to process user"});
