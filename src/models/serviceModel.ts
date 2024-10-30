@@ -5,8 +5,8 @@ interface IService extends Document {
   name: string;
   icon: string;
   buttons: { name: string; path: string }[];
-  actions: string[];
-  reactions: string[];
+    actions: { action_id: string; name: string }[];
+    reactions: { reaction_id: string; name: string }[];
 }
 
 const serviceSchema: Schema<IService> = new mongoose.Schema(
@@ -36,12 +36,54 @@ const serviceSchema: Schema<IService> = new mongoose.Schema(
         },
       },
     ],
-    actions: {
-        type: [String],
-    },
-    reactions: {
-        type: [String],
-    },
+      actions: [
+          {
+              action_id: {
+                  type: String,
+                  required: [true, "Action id is required"],
+              },
+              name: {
+                  type: String,
+                  required: [true, "Action name is required"],
+              },
+              fields: [
+                  {
+                      name: {
+                          type: String,
+                          required: [true, "Field name is required"],
+                      },
+                      type: {
+                          type: String,
+                          required: [true, "Field type is required"],
+                      },
+                  },
+              ],
+          },
+      ],
+      reactions: [
+          {
+              reaction_id: {
+                  type: String,
+                  required: [true, "Reaction id is required"],
+              },
+              name: {
+                  type: String,
+                  required: [true, "Reaction name is required"],
+              },
+              fields: [
+                  {
+                      name: {
+                          type: String,
+                          required: [true, "Field name is required"],
+                      },
+                      type: {
+                          type: String,
+                          required: [true, "Field type is required"],
+                      },
+                  },
+              ],
+          },
+      ],
   },
   { timestamps: true }
 );
