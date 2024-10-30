@@ -22,6 +22,7 @@ import {getFormattedToken} from "../utils/token";
 const clientId = process.env.GITHUB_CLIENT_ID!;
 const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
 const redirectUri = "http://localhost:8080/api/github/callback";
+let previousPushesID: any[] = [];
 
 const githubRouter = express.Router();
 dotenv.config();
@@ -31,16 +32,27 @@ async function getPushEvents(user_uid: string) {
         const tokens = await ApiKey.findOne({ user_id: user_uid, service: "github" });
         const userResponse = await axios.get('https://api.github.com/user', {
             headers: {
-                Authorization: `Bearer ${tokens}`,
+                Authorization: `Bearer ${tokens.api_key}`,
             },
         });
 
-        const { a, b, name, c } = userResponse.data;
-        const response = await axios.get(`https://api.github.com/users/${name}/events`, {
+        const response = await axios.get(`https://api.github.com/users/${userResponse.data.login}/events`, {
             headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
         });
+        const pushes = response.data.filter((event: any) => event.type === 'PushEvent');
 
-        return response.data.filter((event: any) => event.type === 'PushEvent');
+        const newPushes = pushes.filter((obj: any) => obj.id && !previousPushesID.includes(obj.id));
+        if (newPushes.length <= 0) {
+            console.log('No new pushes');
+            return;
+        }
+        previousPushesID += newPushes.map((obj: any) => obj.id);
+        const push = newPushes[0];
+
+        let message = {};
+        message["user_uid"] = user_uid;
+        message["data"] = `Push detected on ${push.repo.name} by ${push.payload.commits[0].author.name} with message: ${push.payload.commits[0].message}`;
+        return message;
     } catch (error) {
         console.error('Erreur lors de la récupération des événements:', error);
         return [];
@@ -57,6 +69,7 @@ export class GithubRoutes implements API {
         if (!this.RouteMap.has(routes)) return null;
         const route = this.RouteMap.get(name);
         if (route === undefined) return null;
+        if (name === "push_events") return await route(user_uid);
         if (params) return await route(params);
         return await route();
     }

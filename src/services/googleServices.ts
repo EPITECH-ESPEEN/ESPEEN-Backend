@@ -65,7 +65,7 @@ export async function sendEmails(message: any) {
         return null;
     }
 
-    const email = `To: ${email_u}\r\n` + "Subject: Meteo de ESPEEN\r\n\r\n" + `${message.data}`;
+    const email = `To: ${email_u}\r\n` + "Subject: EPSEEN Reaction\r\n\r\n" + `${message.data}`;
 
     const encodedMessage = Buffer.from(email).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
