@@ -78,8 +78,30 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     if (!token) return next(new ErrorHandler("User token not found", 404));
     const user = await User.findOne({ user_token: token });
     if (!user) return next(new ErrorHandler("User not found", 404));
-    // TODO : parse to send action reaction "action1 | webhook" for example calling db services to get the action reaction by their name and then getting the field in the service db
-    return res.status(200).json({ user });
+    let actionReaction = user.actionReaction;
+    for (let i = 0; i < actionReaction.length; i++) {
+      for (let j = 0; j < actionReaction[i].length; j++) {
+        let part = actionReaction[i][j].split(".")[0];
+        part = part.charAt(0).toUpperCase() + part.slice(1);
+        const service = await Service.findOne({name: part});
+        if (!service) return next(new ErrorHandler("Service not found", 404));
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: service.name});
+        if (!apikey) return next(new ErrorHandler("Api key not found", 404));
+        if (apikey.webhook) {
+          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
+        } else if (apikey.channel) {
+          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+        }
+      }
+    }
+    const formattedUser = {
+        uid: user.uid,
+        username: user.username,
+        email: user.email,
+        actionReaction: actionReaction,
+    }
+
+    return res.status(200).json({ formattedUser });
     } catch (error) {
       console.error("Error in /api/user route:", error);
       return res.status(500).json({ error: "Failed to process user" });
@@ -95,38 +117,39 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const {username, email, actionReaction} = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
-    /*
-    [ action, reaction|webhook],
-    [ action, reaction|webhook],
-     */
-    // for (const key in actionReaction) {
-    //   for (let i = 0; i < actionReaction[key].length; i++) {
-    //     if (actionReaction[key][i].split("|")) {
-    //       const AorR = actionReaction[key][i].split("|")[0];
-    //       const field = actionReaction[key][i].split("|")[1];
-    //       actionReaction[key][i] = AorR;
-    //       const path = AorR.split(".")[0];
-    //         const service = await ApiKey.findOne({user_id: user.uid, service: path});
-    //         const serviceDb = await Service.findOne({service: path});
-    //         // find in serviceDb.action and reaction the field name of AorR
-    //         // if field is found, update the field with the value of field
-    //         if (serviceDb) {
-    //           for (const i in serviceDb) {
-    //             if (serviceDb[i]) {
-    //               service.action = field;
-    //             } else if (serviceDb.reaction.includes(AorR)) {
-    //               service.reaction = field;
-    //             }
-    //             await service.save();
-    //           } else if (serviceDb.reaction.includes(AorR)) {
-    //             service.reaction = field;
-    //           }
-    //           await service.save();
-    //         }
-    //     }
-    // }
+
+    for (let i = 0; i < actionReaction.length; i++) {
+      for (let j = 0; j < actionReaction[i].length; j++) {
+        let part = actionReaction[i][j].split("|")[0].split(".")[0];
+        part = part.charAt(0).toUpperCase() + part.slice(1);
+        const service = await Service.findOne({name: part});
+        if (!service) return next(new ErrorHandler("Service not found", 404));
+        let field = "none";
+        if (j === 0) {
+             for (let k = 0; k < service.actions.length; k++) {
+                if (service.actions[k].name === actionReaction[i][j].split("|")[0]) {
+                   field = service.actions[k].fields.name;
+                 }
+             }
+        } else if (j === 1) {
+            for (let k = 0; k < service.reactions.length; k++) {
+                if (service.reactions[k].name === actionReaction[i][j].split("|")[0]) {
+                  field = service.reactions[k].fields.name;
+                }
+            }
+        }
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: service.name});
+        if (!apikey) return next(new ErrorHandler("Api key not found", 404));
+        if (field == "webhook") {
+            apikey.webhook = actionReaction[i][j].split("|")[1];
+        } else if (field == "channel") {
+          apikey.channel = actionReaction[i][j].split("|")[1];
+        }
+        await apikey.save();
+        actionReaction[i][j] = actionReaction[i][j].split("|")[0];
+      }
+    }
     user.actionReaction = actionReaction || user.actionReaction;
-    // TODO : parse action reaction "action1 | webhook" for example
     await user.save();
     return res.status(200).json({user});
   } catch (error) {
