@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import {google} from "googleapis";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import {getFormattedToken} from "../utils/token";
 
 export async function isAuthToGoogle(user_uid: number) {
     const tokens = await ApiKey.find({ user_id: user_uid });
@@ -223,7 +224,7 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
-        res.redirect(`http://localhost:3000/services`);
+        res.redirect(`${process.env.FRONT_URL}/services`);
         if (tokens.access_token) {
             if (tokens.refresh_token) {
                 await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
@@ -238,16 +239,14 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
     }
 });
 
-googleRouter.delete("/google/logout", async (req, res) => {
+googleRouter.get("/google/logout", async (req, res) => {
     try {
-        const authHeader = req.headers.authorization?.split(" ")[1];
-        if (!authHeader) {
-            return res.status(401).json({error: "Authorization header is missing"});
-        }
+        const authHeader = getFormattedToken(req);
         const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "google"});
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
+        res.redirect(`${process.env.FRONT_URL}/services`);
         return res.status(200).json({message: "User deleted successfully"});
     } catch (error) {
         console.error("Error in /api/google/auth route:", error);

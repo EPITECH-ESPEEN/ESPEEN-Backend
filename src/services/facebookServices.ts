@@ -4,6 +4,8 @@ import passport from "passport";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import ApiKey from "../models/apiKeyModels";
+import {getFormattedToken} from "../utils/token";
 
 const fbRouter = express();
 
@@ -43,17 +45,17 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
 }), async (req, res) => {
     const { accessToken, refreshToken } = req.user as any;
     const code = req.query.code;
-    if (code) {
-        const authHeader = req.cookies.authToken;
-        if (!authHeader) {
-            return res.status(401).json({error: "Authorization header is missing"});
-        }
+    if (!code) {
+        return res.status(400).send("Validation code is missing");
+    }
+    const authHeader = req.cookies.authToken;
+    if (authHeader) {
         const userToken = await User.findOne({user_token: authHeader});
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
         const user_uid = userToken.uid;
-        res.redirect(`http://localhost:3000/services`);
+        res.redirect(`${process.env.FRONT_URL}/services`);
         if (accessToken) {
             if (refreshToken) {
                 await createAndUpdateApiKey(accessToken, refreshToken, user_uid, "facebook");
@@ -64,7 +66,30 @@ fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
             return res.status(500).send("Internal Server Error");
         }
     } else {
-        return res.status(400).send("Validation code is missing");
+        const db_token = await ApiKey.findOne({access_token: accessToken});
+        if (!db_token) {
+            return res.status(400).json({message: "Facebook account not linked"});
+        }
+        const user = await User.findOne({uid: db_token.user_id});
+        if (!user) {
+            return res.status(400).json({message: "User not found"});
+        }
+        return res.status(200).json({ access_token: user.user_token });
+    }
+});
+
+fbRouter.get('/facebook/logout', async (req, res) => {
+    try {
+        const authHeader = getFormattedToken(req);
+        const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "facebook"});
+        if (!userToken) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        res.redirect(`${process.env.FRONT_URL}/services`);
+        return res.status(200).json({message: "User deleted successfully"});
+    } catch (error) {
+        console.error("Error in /api/facebook/logout route:", error);
+        return res.status(500).json({error: "Failed to process user"});
     }
 });
 
