@@ -108,7 +108,7 @@ export const setUserProfile = async (req: AuthenticatedRequest, res: Response, n
 
 export const getOAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const facebook_service = await Service.findOne({ name: "facebook" });
+    const facebook_service = await Service.findOne({ name: "Facebook" });
     if (!facebook_service) {
       return res.status(404).json({ error: "Service not found" });
     }
