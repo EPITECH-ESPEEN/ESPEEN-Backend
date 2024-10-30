@@ -8,6 +8,7 @@ import {google} from "googleapis";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {getFormattedToken} from "../utils/token";
+import {YoutubeRoutes} from "./youtubeServices";
 
 export async function isAuthToGoogle(user_uid: number) {
     const tokens = await ApiKey.find({ user_id: user_uid });
@@ -99,24 +100,16 @@ export class GmailRoutes implements API {
         if (!this.RouteMap.has(routes)) return null;
         const route = this.RouteMap.get(name);
         if (route === undefined) return null;
-        if (name === "recep_email") return await route(user_uid);
+        if (name === "receive_email") return await route(user_uid);
         if (params) return await route(params);
         return await route();
-    }
-}
-
-export class DriveRoutes implements API {
-    ApiMap: Map<string, API> = new Map<string, API>();
-
-    redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
-        return null;
     }
 }
 
 export class GoogleApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>([
         ["gmail", new GmailRoutes()],
-        ["drive", new DriveRoutes()],
+        ["youtube", new YoutubeRoutes()],
     ]);
 
     redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -131,7 +124,11 @@ const googleRouter = express.Router();
 dotenv.config();
 
 const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, process.env.GOOGLE_CALLBACK); // const {GoogleAuth} = require('google-auth-library') ?
-const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/gmail.send"];
+const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/gmail.send",
+                "https://www.googleapis.com/auth/youtube"];
 let previousMessageIds: string[] = [];
 
 async function checkEmails(user_uid: string) {
