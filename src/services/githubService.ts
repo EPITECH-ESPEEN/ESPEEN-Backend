@@ -42,7 +42,7 @@ async function getPushEvents(user_uid: string) {
 
         return response.data.filter((event: any) => event.type === 'PushEvent');
     } catch (error) {
-        console.error('Erreur lors de la récupération des événements :', error);
+        console.error('Erreur lors de la récupération des événements:', error);
         return [];
     }
 }
