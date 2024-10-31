@@ -30,13 +30,17 @@ dotenv.config();
 async function getPushEvents(user_uid: string) {
     try {
         const tokens = await ApiKey.findOne({ user_id: user_uid, service: "github" });
-        const userResponse = await axios.get('https://api.github.com/user', {
+        if (!tokens || !tokens.api_key) {
+            console.error("No tokens found for user:", user_uid);
+            return null;
+        }
+        const userResponse: any = await axios.get('https://api.github.com/user', {
             headers: {
                 Authorization: `Bearer ${tokens.api_key}`,
             },
         });
 
-        const response = await axios.get(`https://api.github.com/users/${userResponse.data.login}/events`, {
+        const response: any = await axios.get(`https://api.github.com/users/${userResponse.data.login}/events`, {
             headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
         });
         const pushes = response.data.filter((event: any) => event.type === 'PushEvent');
@@ -49,7 +53,7 @@ async function getPushEvents(user_uid: string) {
         previousPushesID += newPushes.map((obj: any) => obj.id);
         const push = newPushes[0];
 
-        let message = {};
+        let message: any = {};
         message["user_uid"] = user_uid;
         message["data"] = `Push detected on ${push.repo.name} by ${push.payload.commits[0].author.name} with message: ${push.payload.commits[0].message}`;
         return message;
@@ -112,7 +116,7 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
             }
         );
 
-        const { access_token } = tokenResponse.data;
+        const { access_token }: any = tokenResponse.data;
 
         if (access_token) {
             await axios.get("https://api.github.com/user", {
@@ -123,11 +127,11 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
             await createAndUpdateApiKey(access_token, "", user_uid, "github");
             return;
         } else {
-            res.status(500).send("Échec de l'obtention de l'access_token");
+            return res.status(500).send("Échec de l'obtention de l'access_token");
         }
     } catch (error) {
         console.error("Erreur lors de l'authentification GitHub :", error);
-        res.status(500).send("Erreur lors de l'authentification GitHub");
+        return res.status(500).send("Erreur lors de l'authentification GitHub");
     }
 });
 

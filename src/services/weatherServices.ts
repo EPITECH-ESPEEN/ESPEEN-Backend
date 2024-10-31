@@ -1,6 +1,6 @@
 import axios from "axios";
 import catchAsyncErrors from "../middlewares/catchAsyncErrors";
-import { API } from "./API";
+import { API } from "../utils/interfaces";
 
 export const getCurrentWeather = catchAsyncErrors(async (req, res, next) => {
   try {
@@ -27,7 +27,7 @@ export class MeteoApi implements API {
       }
 
       const weatherData = await response.json();
-      let message = {};
+      let message: any = {};
       message["user_uid"] = user_uid;
       message["data"] = `La température actuelle à ${weatherData.location.name} est de ${weatherData.current.temp_c}°C.`;
       return message;

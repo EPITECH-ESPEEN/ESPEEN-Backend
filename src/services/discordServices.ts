@@ -7,13 +7,13 @@ import passport from "passport";
 import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
-import {isAuthenticatedUser} from "../middlewares/userAuthentication";
 import {getFormattedToken} from "../utils/token";
 
 export const discordMessageWebhook = async (message: any) => {
   if (message === undefined) return null;
   const uid: number = message.user_uid;
-  const users = await ApiKey.findOne({ user_id: uid, service: "discord" });
+  const users: any = await ApiKey.findOne({ user_id: uid, service: "discord" });
+  if (!users) return null;
   const response = await fetch(users.webhook, {
     method: "POST",
     headers: {
@@ -48,7 +48,7 @@ export const checkMessageChannel = async (message: any) => {
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => msg.id > lastMessageId);
+    const newMessages = discordMessages.filter((msg: any) => (lastMessageId === null) ? true : msg.id > lastMessageId);
 
     if (newMessages.length === 0) {
       console.log("No new messages in the channel.");
@@ -173,7 +173,7 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
       session: true,
     }),
     async (req, res) => {
-      const tokens = req.user;
+      const tokens: any = req.user;
 
       console.log("Access token:", tokens);
       if (!tokens) {

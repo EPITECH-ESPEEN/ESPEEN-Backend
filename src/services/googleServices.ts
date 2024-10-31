@@ -1,13 +1,12 @@
 import ApiKey from "../models/apiKeyModels";
 import axios from "axios";
-import fs from "fs";
-import {API} from "../utils/interfaces";
+import { API } from "../utils/interfaces";
 import express from "express";
 import dotenv from "dotenv";
-import {google} from "googleapis";
+import { google } from "googleapis";
 import User from "../models/userModel";
-import {createAndUpdateApiKey} from "../controllers/apiKeyController";
-import {getFormattedToken} from "../utils/token";
+import { createAndUpdateApiKey } from "../controllers/apiKeyController";
+import { getFormattedToken } from "../utils/token";
 
 export async function isAuthToGoogle(user_uid: number) {
     const tokens = await ApiKey.find({ user_id: user_uid });
@@ -40,9 +39,9 @@ export async function getUserEmail(user_uid: string) {
     };
 
     try {
-        const response = await axios.get(url, config);
+        const response: any = await axios.get(url, config);
         return response.data.email;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur lors de la récupération de l'email :", error.response ? error.response.data : error.message);
         return null;
     }
@@ -50,7 +49,6 @@ export async function getUserEmail(user_uid: string) {
 
 export async function sendEmails(message: any) {
     if (message === undefined) return null;
-    const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
     const tokens = await ApiKey.findOne({ user_id: message.user_uid, service: "google" });
 
     const email_u = await getUserEmail(message.user_uid);
@@ -82,10 +80,11 @@ export async function sendEmails(message: any) {
     };
 
     try {
-        const response = await axios.post(url, data, config);
-    } catch (error) {
+        await axios.post(url, data, config);
+    } catch (error: any) {
         console.error("Erreur lors de l'envoi de l'email :", error.response ? error.response.data : error.message);
     }
+    return true;
 }
 
 export class GmailRoutes implements API {

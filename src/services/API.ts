@@ -40,13 +40,15 @@ export function serviceRouter() {
   setInterval(async () => {
     const users = await User.find({});
     for (let i = 0; i < users.length; i++) {
-      let user_services: { [key: string]: string } | undefined = users[i].actionReaction;
+      let user_services: string[][] | undefined = users[i].actionReaction;
       if (user_services === undefined) {
         return;
+      } else if (user_services.length === 0) {
+        continue;
       }
       const user_routes = user_services[0];
-      for (let user_service in user_routes) {
-        switch (user_routes[user_service].split(".")[0]) {
+      for (let user_service of user_routes) {
+        switch (user_service.split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
               return;
@@ -63,20 +65,19 @@ export function serviceRouter() {
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 
-        for (let key in user_routes) {
-          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: user_routes[key].split(".")[0] }).select("api_key");
+        for (let key of user_routes) {
+          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: key.split(".")[0] }).select("api_key");
           if (apiKeyDoc) {
             access_token = apiKeyDoc.api_key;
           }
-          let service: string[] = user_routes[key].split(".");
+          let service: string[] = key.split(".");
           if (results === undefined) {
-            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), undefined, access_token, users[i].uid);
+            results = await routerAPI.redirect_to(service[0], key.replace(service[0] + ".", ""), undefined, access_token, users[i].uid.toString());
           } else {
-            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), results, access_token, users[i].uid);
+            results = await routerAPI.redirect_to(service[0], key.replace(service[0] + ".", ""), results, access_token, users[i].uid.toString());
           }
         }
       }
     }
   }, 5000);
 }
-
