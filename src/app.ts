@@ -19,7 +19,7 @@ import { serviceRouter } from "./services/API";
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: "http://localhost:8081",
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -34,7 +34,7 @@ process.on("uncaughtException", (err) => {
 dotenv.config();
 connectDB();
 
-app.use(cors({ origin: "http://localhost:3000", methods: ["GET", "POST", "DELETE", "PUT"] }));
+app.use(cors({ origin: "http://localhost:8081", methods: ["GET", "POST", "DELETE", "PUT"] }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 

@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import User, { UserRole } from "../models/userModel";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import Service from "../models/serviceModel";
 
 interface RegisterUserBody {
   username: string;
@@ -104,3 +105,16 @@ export const setUserProfile = async (req: AuthenticatedRequest, res: Response, n
     return res.status(500).json({ error: "Failed to process profile" });
   }
 };
+
+export const getOAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const service = await Service.findOne({ name: "google" });
+    if (!service) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+    return res.status(200).json({ service });
+  } catch (error) {
+    console.error("Error in /api/oauth route:", error);
+    return res.status(500).json({ error: "Failed to process OAuth" });
+  }
+}

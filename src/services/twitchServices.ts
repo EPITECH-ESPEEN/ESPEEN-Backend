@@ -82,9 +82,8 @@ twitchRouter.get('/twitch/callback', passport.authenticate('oauth2', {
         }
         
         const userAuthentifiedUid = userAuthentified.uid;
-        
-        res.redirect(`http://localhost:3000/services`);
-        
+        res.redirect(`${process.env.FRONT_URL}/services`);
+
         if (accessToken) {
             if (refreshToken) {
                 await createAndUpdateApiKey(accessToken, refreshToken, userAuthentifiedUid, "twitch");
