@@ -58,8 +58,8 @@ export function serviceRouter() {
             break;
           case "twitch":
             break;
-          case "facebook":
-            break;
+          // case "facebook":
+          //   break;
           default:
             return;
         }

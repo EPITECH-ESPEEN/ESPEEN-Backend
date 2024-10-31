@@ -4,6 +4,7 @@ import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
 import aboutJSON from "./routes/aboutJSON";
 import cors from "cors";
+import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/usersRoutes";
@@ -12,7 +13,7 @@ import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
 import discordRouter from "./services/discordServices";
 import twitchRouter from "./services/twitchServices";
-import facebookRouter from "./services/facebookServices";
+// import facebookRouter from "./services/facebookServices";
 import { serviceRouter } from "./services/API";
 
 const app = express();
@@ -30,6 +31,7 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
+dotenv.config();
 connectDB();
 
 app.use(cors({ origin: "http://localhost:3000", methods: ["GET", "POST", "DELETE", "PUT"] }));
@@ -42,7 +44,7 @@ app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
 app.use("/api", discordRouter);
 app.use("/api", twitchRouter);
-app.use("/api", facebookRouter);
+// app.use("/api", facebookRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);
 
