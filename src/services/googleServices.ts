@@ -143,10 +143,8 @@ async function checkEmails(user_uid: string) {
     let accessToken = tokens.api_key;
     let refreshToken = tokens.refresh_token;
 
-    // Check if access token is expired
     if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
         try {
-            // Refresh the token using the stored refresh token
             let { token: accessToken } = await oauth2Client.getAccessToken();
             accessToken = oauth2Client.credentials.access_token;
 
