@@ -85,7 +85,8 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
         part = part.charAt(0).toUpperCase() + part.slice(1);
         const service = await Service.findOne({name: part});
         if (!service) return next(new ErrorHandler("Service not found", 404));
-        const apikey = await ApiKey.findOne({user_id: user.uid, service: service.name});
+        const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
         if (!apikey) return next(new ErrorHandler("Api key not found", 404));
         if (apikey.webhook) {
           actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
@@ -138,7 +139,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
                 }
             }
         }
-        const apikey = await ApiKey.findOne({user_id: user.uid, service: service.name});
+        const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
         if (!apikey) return next(new ErrorHandler("Api key not found", 404));
         if (field == "webhook") {
             apikey.webhook = actionReaction[i][j].split("|")[1];

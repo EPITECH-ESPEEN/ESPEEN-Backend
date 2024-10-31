@@ -51,6 +51,7 @@ export async function getUserEmail(user_uid: string) {
 
 export async function sendEmails(message: any) {
     if (message === undefined) return null;
+    console.log("Sending email to user:", message);
     const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
     const tokens = await ApiKey.findOne({ user_id: message.user_uid, service: "google" });
 
@@ -215,7 +216,15 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
 
         const authHeader = req.cookies.authToken;
         if (!authHeader) {
-            return res.status(401).json({ error: "Authorization header is missing" });
+            const db_token = await ApiKey.findOne({access_token: tokens.access_token});
+            if (!db_token) {
+                return res.status(400).json({message: "Google account not linked"});
+            }
+            const user = await User.findOne({uid: db_token.user_id});
+            if (!user) {
+                return res.status(400).json({message: "User not found"});
+            }
+            return res.redirect(`${process.env.FRONT_URL}/login/?token=${user.user_token}`);
         }
         const userToken = await User.findOne({ user_token: authHeader });
         if (!userToken) {
@@ -226,16 +235,60 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
         if (tokens.access_token) {
             if (tokens.refresh_token) {
                 await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
-            } else await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
+                await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "youtube");
+            } else {
+                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
+                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "youtube");
+            }
+            return;
+        } else {
+            console.error("Access token or refresh token is missing");
+            return res.status(500).json("Internal Server Error");
+        }
+    } else {
+        return res.status(400).json("Code de validation manquant");
+    }
+});
+
+/*
+fbRouter.get('/facebook/callback', passport.authenticate('facebook', {
+    failureRedirect: '/login'
+}), async (req, res) => {
+    const { accessToken, refreshToken } = req.user as any;
+    const code = req.query.code;
+    if (!code) {
+        return res.status(400).send("Validation code is missing");
+    }
+    const authHeader = req.cookies.authToken;
+    if (authHeader) {
+        const userToken = await User.findOne({user_token: authHeader});
+        if (!userToken) {
+            return res.status(401).json({error: "Unauthorized"});
+        }
+        const user_uid = userToken.uid;
+        res.redirect(`${process.env.FRONT_URL}/services`);
+        if (accessToken) {
+            if (refreshToken) {
+                await createAndUpdateApiKey(accessToken, refreshToken, user_uid, "facebook");
+            } else await createAndUpdateApiKey(accessToken, "", user_uid, "facebook");
             return;
         } else {
             console.error("Access token or refresh token is missing");
             return res.status(500).send("Internal Server Error");
         }
     } else {
-        return res.status(400).send("Code de validation manquant");
+        const db_token = await ApiKey.findOne({access_token: accessToken});
+        if (!db_token) {
+            return res.status(400).json({message: "Facebook account not linked"});
+        }
+        const user = await User.findOne({uid: db_token.user_id});
+        if (!user) {
+            return res.status(400).json({message: "User not found"});
+        }
+        return res.status(200).json({ access_token: user.user_token });
     }
 });
+ */
 
 googleRouter.get("/google/logout", async (req, res) => {
     try {

@@ -12,7 +12,7 @@ interface ChannelInfo {
 const getSubscribedChannels = async (user_uid: string): Promise<ChannelInfo[]> => {
     const url = `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&key=${API_KEY}`;
     const token = await ApiKey.findOne({ user_id: user_uid, service: "google" });
-    const channels: ChannelInfo[] = [];
+    let channels: ChannelInfo[] = [];
 
     if (!token?.api_key) {
         console.error("API key not found for user.");
@@ -43,8 +43,7 @@ const getSubscribedChannels = async (user_uid: string): Promise<ChannelInfo[]> =
 };
 
 const getRecentVideos = async (channelId: string) => {
-    const twoMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${channelId}&order=date&part=snippet&type=video&publishedAfter=${twoMinutesAgo}`;
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${channelId}&order=date&part=snippet&type=video`;
 
     try {
         const response = await fetch(url);
@@ -62,26 +61,24 @@ const getRecentVideos = async (channelId: string) => {
 
 export async function checkRecentVideosFromSubscriptions(user_uid: string) {
     const channels = await getSubscribedChannels(user_uid);
-    const videoData: Array<{ channelName: string; channelId: string; videos: Array<{ title: string; videoId: string }> }> = [];
-
-    for (const { id: channelId, name: channelName } of channels) {
-        const recentVideos = await getRecentVideos(channelId);
-
-        if (recentVideos && recentVideos.length > 0) {
-            const videos = recentVideos.map((video: any) => ({
-                title: video.snippet.title,
-                videoId: video.id.videoId,
-            }));
-            videoData.push({ channelName, channelId, videos });
-        }
+    if (channels.length === 0) {
+        return null;
     }
+    const name = channels[0].name;
+    const id = channels[0].id;
+    const recentVideos = await getRecentVideos(id);
+    if (!recentVideos || recentVideos.length === 0) {
+        return null;
+    }
+    const videosString = recentVideos
+        .map((video: any) => `Title: ${video.snippet.title}, Video ID: ${video.id.videoId}`)
+        .join("\n");
     const message = {
-        data: videoData,
+        data: `Channel: ${name} (ID: ${id})\nRecent Videos:\n${videosString}`,
         user_uid: user_uid
     };
     return message;
 }
-
 
 
 export class YoutubeRoutes implements API {
