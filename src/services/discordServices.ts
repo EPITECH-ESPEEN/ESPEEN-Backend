@@ -250,7 +250,7 @@ discordRouter.get("/discord/logout", async (req, res) => {
       return res.status(401).json({error: "Unauthorized"});
     }
     res.redirect(`${process.env.FRONT_URL}/services`);
-    return res.status(200).json({message: "User deleted successfully"});
+    // return res.status(200).json({message: "User deleted successfully"});
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);
     return res.status(500).json({error: "Failed to process user"});

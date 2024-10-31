@@ -30,7 +30,8 @@
     "passport": "^0.7.0",
     "passport-discord": "^0.1.4",
     "passport-facebook": "^3.0.0",
-    "passport-oauth2": "^1.8.0"
+    "passport-oauth2": "^1.8.0",
+    "request": "^2.88.2"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",
@@ -45,6 +46,7 @@
     "@types/node-fetch": "^2.6.11",
     "@types/passport-facebook": "^3.0.3",
     "@types/passport-oauth2": "^1.4.17",
+    "@types/request": "^2.48.12",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
