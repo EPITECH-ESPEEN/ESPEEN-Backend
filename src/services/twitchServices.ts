@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as OAuth2Strategy } from "passport-oauth2";
+import axios from "axios";
 import request from "request";
 
 import User from "../models/userModel";
@@ -14,8 +15,44 @@ import {getFormattedToken} from "../utils/token";
 
 export class TwitchApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
+    RouteMap: Map<string, Function> = new Map<string, Function>([
+        ["updateTwitchUserDescription", updateTwitchUserDescription]
+    ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
+        return null;
+    }
+}
+
+//// Reactions ////
+
+//TODO: Check how to retrieve accessToken
+export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {
+    const tokens = await ApiKey.findOne({user_id: user_id, service: "twitch"});
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user :", user_id);
+        return null;
+    }
+
+    let accessToken = tokens.api_key;
+    
+    if (descriptionUpdated === "")
+        return null;
+
+    const url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+            "Content-Type": "application/json"
+        },
+    };
+    try {
+        const response = await axios.put(url, {}, config);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch Reaction | Update user description data res : ${response.data}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error when update Twitch user description :", error);
         return null;
     }
 }
@@ -25,7 +62,6 @@ export class TwitchApi implements API {
 
 const twitchRouter = express.Router();
 
-// Setup Express
 twitchRouter.use(session({
     secret: process.env.SESSION_SECRET || "some_random_secret",
     resave: false,
@@ -35,7 +71,6 @@ twitchRouter.use(express.static('public'));
 twitchRouter.use(passport.initialize());
 twitchRouter.use(passport.session());
 
-// Get user profile from Twitch
 OAuth2Strategy.prototype.userProfile = function(accessToken, done) {
     var options = {
         url: 'https://api.twitch.tv/helix/users',
@@ -135,6 +170,7 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
     }
 });
 
+////
 
 
 export default twitchRouter;
