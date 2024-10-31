@@ -20,6 +20,7 @@ export class TwitchApi implements API {
         ["updateTwitchUserDescription", updateTwitchUserDescription],
         ["getTwitchBannedUser", getTwitchBannedUser],
         ["getTwitchModerators", getTwitchModerators],
+        ["getTwitchChannelInfo", getTwitchChannelInfo],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -27,7 +28,7 @@ export class TwitchApi implements API {
     }
 }
 
-//// Reactions ////
+//////////// Reactions ////////////
 
 //INFO : More an utils function than a reaction
 export async function getUserIdFromAccessToken(accessToken: string): Promise<string | null> {
@@ -97,7 +98,7 @@ export async function getTwitchBannedUser(user_id: string) {
 
     let accessToken = tokens.api_key;
     //TODO " broadcaster_id should be dynamic
-    const broadcaster_id = getUserIdFromAccessToken(accessToken);
+    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", user_id);
         return null;
@@ -131,7 +132,8 @@ export async function getTwitchModerators(user_id: string) {
     }
 
     const accessToken = tokens.api_key;
-    const broadcaster_id = getUserIdFromAccessToken(accessToken);
+    //TODO " broadcaster_id should be dynamic
+    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", user_id);
         return null;
@@ -155,9 +157,49 @@ export async function getTwitchModerators(user_id: string) {
     }
 }
 
+//TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
+export async function getTwitchChannelInfo(user_id: string): Promise<any | null> {
+    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", user_id);
+        return null;
+    }
+
+    const accessToken = tokens.api_key;
+    //TODO " broadcaster_id should be dynamic
+    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    if (!broadcaster_id) {
+        console.error("No broadcaster_id found for user :", user_id);
+        return null;
+    }
+    const url = `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcaster_id}`;
+    
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        const responseData = response.data as { data: any[] };
+        const channelData = responseData.data[0];
+        if (channelData) {
+            console.log(`Channel information retrieved: ${JSON.stringify(channelData)}`);
+            return channelData;
+        } else {
+            console.error("Channel data not found in response");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching channel information from Twitch:", error);
+        return null;
+    }
+}
 
 
-//// OAuth2 ////
+//////////// OAuth2 ////////////
 
 const twitchRouter = express.Router();
 
