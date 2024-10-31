@@ -21,6 +21,7 @@ export class TwitchApi implements API {
         ["getTwitchBannedUser", getTwitchBannedUser],
         ["getTwitchModerators", getTwitchModerators],
         ["getTwitchChannelInfo", getTwitchChannelInfo],
+        ["getTwitchUserClips", getTwitchUserClips],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -32,7 +33,7 @@ export class TwitchApi implements API {
 
 //INFO : More an utils function than a reaction
 export async function getUserIdFromAccessToken(accessToken: string): Promise<string | null> {
-    const url = "https://api.twitch.tv/helix/users";
+    let url = "https://api.twitch.tv/helix/users";
     const config = {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -69,7 +70,7 @@ export async function updateTwitchUserDescription(user_id: string, descriptionUp
     if (descriptionUpdated === "")
         return null;
 
-    const url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
+    let url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
     const config = {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -103,7 +104,7 @@ export async function getTwitchBannedUser(user_id: string) {
         console.error("No broadcaster_id found for user :", user_id);
         return null;
     }
-    const url = `https://api.twitch.tv/helix/moderation/banned?broadcaster_id=${broadcaster_id}`;
+    let url = `https://api.twitch.tv/helix/moderation/banned?broadcaster_id=${broadcaster_id}`;
 
     const config = {
         headers: {
@@ -138,7 +139,7 @@ export async function getTwitchModerators(user_id: string) {
         console.error("No broadcaster_id found for user :", user_id);
         return null;
     }
-    const url = `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcaster_id}`;
+    let url = `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcaster_id}`;
 
     const config = {
         headers: {
@@ -157,6 +158,7 @@ export async function getTwitchModerators(user_id: string) {
     }
 }
 
+//INFO : This request no need moderated scope (broadcaster_id can be what we want)
 //TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
 export async function getTwitchChannelInfo(user_id: string): Promise<any | null> {
     const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
@@ -172,7 +174,7 @@ export async function getTwitchChannelInfo(user_id: string): Promise<any | null>
         console.error("No broadcaster_id found for user :", user_id);
         return null;
     }
-    const url = `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcaster_id}`;
+    let url = `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcaster_id}`;
     
     const config = {
         headers: {
@@ -194,6 +196,40 @@ export async function getTwitchChannelInfo(user_id: string): Promise<any | null>
         }
     } catch (error) {
         console.error("Error fetching channel information from Twitch:", error);
+        return null;
+    }
+}
+
+//INFO : This request no need moderated scope (broadcaster_id can be what we want)
+export async function getTwitchUserClips(user_id: string): Promise<any | null> {
+    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", user_id);
+        return null;
+    }
+
+    const accessToken = tokens.api_key;
+    //TODO " broadcaster_id should be dynamic
+    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    if (!broadcaster_id) {
+        console.error("No broadcaster_id found for user :", user_id);
+        return null;
+    }
+    let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        console.log(`Clips data retrieved: ${JSON.stringify(response.data)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching clips from Twitch:", error);
         return null;
     }
 }
