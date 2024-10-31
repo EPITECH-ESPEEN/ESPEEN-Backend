@@ -16,7 +16,8 @@ import {getFormattedToken} from "../utils/token";
 export class TwitchApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
     RouteMap: Map<string, Function> = new Map<string, Function>([
-        ["updateTwitchUserDescription", updateTwitchUserDescription]
+        ["updateTwitchUserDescription", updateTwitchUserDescription],
+        ["getTwitchBannedUser", getTwitchBannedUser]
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -26,7 +27,7 @@ export class TwitchApi implements API {
 
 //// Reactions ////
 
-//TODO: Check how to retrieve accessToken
+//TODO: Check if it's correct to retrieve accessToken like this
 export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {
     const tokens = await ApiKey.findOne({user_id: user_id, service: "twitch"});
     if (!tokens || !tokens.api_key) {
@@ -57,6 +58,36 @@ export async function updateTwitchUserDescription(user_id: string, descriptionUp
     }
 }
 
+//TO CHECK : Requires a user access token that includes the moderation:read or moderator:manage:banned_users scope.
+//TODO Handle dynamic broadcaster : update broadcaster_id in params (and field from frontend)
+export async function getTwitchBannedUser(user_id: string) {
+    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user :", user_id);
+        return null;
+    }
+
+    let accessToken = tokens.api_key;
+    //TODO broadcaster_id should be dynamic
+    const broadcaster_id = "61651255"
+    const url = `https://api.twitch.tv/helix/moderation/banned?broadcaster_id=${broadcaster_id}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Banned users data: ${JSON.stringify(response.data)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching banned users from Twitch:", error);
+        return null;
+    }
+}
 
 //// OAuth2 ////
 
