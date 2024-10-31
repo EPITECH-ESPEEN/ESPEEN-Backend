@@ -22,10 +22,24 @@ import {getFormattedToken} from "../utils/token";
 const clientId = process.env.GITHUB_CLIENT_ID!;
 const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
 const redirectUri = "http://localhost:8080/api/github/callback";
-let previousPushesID: any[] = [];
+let previousPushesID: { uid: string, push_id: string }[] = [];
 
 const githubRouter = express.Router();
 dotenv.config();
+
+function isAlreadyInArray(id: any, push_id: any) {
+    for (let i = 0; i < previousPushesID.length; i++) {
+        if (previousPushesID[i].uid === id && previousPushesID[i].push_id === push_id) {
+            return true;
+        } else if (previousPushesID[i].uid === id && Number(previousPushesID[i].push_id) < Number(push_id)) {
+            console.log("Push already in array");
+            previousPushesID[i].push_id = push_id;
+            return false;
+        }
+    }
+    previousPushesID.push({uid: id, push_id: push_id});
+    return false;
+}
 
 async function getPushEvents(user_uid: string) {
     try {
@@ -43,16 +57,13 @@ async function getPushEvents(user_uid: string) {
         const response: any = await axios.get(`https://api.github.com/users/${userResponse.data.login}/events`, {
             headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
         });
-        console.dir(response.data, { depth: null });
         const pushes = response.data.filter((event: any) => event.type === 'PushEvent');
 
-        console.dir(pushes, { depth: null });
-        const newPushes = pushes.filter((obj: any) => obj.id && !previousPushesID.includes(obj.id));
+        const newPushes = pushes.filter((obj: any) => obj.id && !isAlreadyInArray(user_uid, obj.id));
         if (newPushes.length <= 0) {
             console.log('No new pushes');
             return;
         }
-        previousPushesID += newPushes.map((obj: any) => obj.id);
         const push = newPushes[0];
 
         let message: any = {};
