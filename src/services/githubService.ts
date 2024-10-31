@@ -43,8 +43,10 @@ async function getPushEvents(user_uid: string) {
         const response: any = await axios.get(`https://api.github.com/users/${userResponse.data.login}/events`, {
             headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
         });
+        console.dir(response.data, { depth: null });
         const pushes = response.data.filter((event: any) => event.type === 'PushEvent');
 
+        console.dir(pushes, { depth: null });
         const newPushes = pushes.filter((obj: any) => obj.id && !previousPushesID.includes(obj.id));
         if (newPushes.length <= 0) {
             console.log('No new pushes');
