@@ -22,6 +22,7 @@ export class TwitchApi implements API {
         ["getTwitchModerators", getTwitchModerators],
         ["getTwitchChannelInfo", getTwitchChannelInfo],
         ["getTwitchUserClips", getTwitchUserClips],
+        ["getTwitchTopGames", getTwitchTopGames],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -230,6 +231,34 @@ export async function getTwitchUserClips(user_id: string): Promise<any | null> {
         return response.data;
     } catch (error) {
         console.error("Error fetching clips from Twitch:", error);
+        return null;
+    }
+}
+
+//INFO : "first" parameter is optional (is the maximum number of items to return)
+export async function getTwitchTopGames(user_id: string, first: number = 10): Promise<any | null> {
+    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", user_id);
+        return null;
+    }
+
+    const accessToken = tokens.api_key;
+    const url = `https://api.twitch.tv/helix/games/top?first=${first}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        console.log(`Top games data retrieved: ${JSON.stringify(response.data)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching top games from Twitch:", error);
         return null;
     }
 }
