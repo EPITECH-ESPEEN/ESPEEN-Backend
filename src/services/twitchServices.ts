@@ -17,12 +17,12 @@ export class TwitchApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
     RouteMap: Map<string, Function> = new Map<string, Function>([
         ["getUserIdFromAccessToken", getUserIdFromAccessToken],
-        ["updateTwitchUserDescription", updateTwitchUserDescription],
-        ["getTwitchBannedUser", getTwitchBannedUser],
-        ["getTwitchModerators", getTwitchModerators],
-        ["getTwitchChannelInfo", getTwitchChannelInfo],
-        ["getTwitchUserClips", getTwitchUserClips],
-        ["getTwitchTopGames", getTwitchTopGames],
+        ["update_description", updateTwitchUserDescription],
+        ["get_banned_users", getTwitchBannedUser],
+        ["get_modos", getTwitchModerators],
+        ["get_channel_infos", getTwitchChannelInfo],
+        ["get_user_clips", getTwitchUserClips],
+        ["get_top_games", getTwitchTopGames],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -59,8 +59,9 @@ export async function getUserIdFromAccessToken(accessToken: string): Promise<str
 }
 
 //TO CHECK : if it's correct to retrieve accessToken like this (same logic for all reactions)
-export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {
-    const tokens = await ApiKey.findOne({user_id: user_id, service: "twitch"});
+//TODO : Description should be dynamic `export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {`
+export async function updateTwitchUserDescription(user_id: string) {
+        const tokens = await ApiKey.findOne({user_id: user_id, service: "twitch"});
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user :", user_id);
         return null;
@@ -68,8 +69,9 @@ export async function updateTwitchUserDescription(user_id: string, descriptionUp
 
     let accessToken = tokens.api_key;
     
-    if (descriptionUpdated === "")
-        return null;
+    // if (descriptionUpdated === "")
+    //     return null;
+    let descriptionUpdated = "New description";
 
     let url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
     const config = {
