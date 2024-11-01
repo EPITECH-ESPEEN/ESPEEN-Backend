@@ -23,6 +23,8 @@ export const registerUser = async (req: Request<{}, {}, RegisterUserBody>, res: 
   try {
     const { username, email, password } = req.body;
     const lastCustomer = await User.findOne().sort({ uid: -1 }).exec();
+    if (!password || password.length < 8)
+      return res.status(500).json({ error: "Password is required" });
     const newId = lastCustomer ? lastCustomer.uid + 1 : 1;
     const hashPassword = await bcrypt.hash(password, 10);
     const payload = {
