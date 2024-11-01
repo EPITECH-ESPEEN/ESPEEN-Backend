@@ -118,6 +118,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const {username, email, actionReaction} = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
+    console.log("actionReaction here :", actionReaction);
 
     for (let i = 0; i < actionReaction.length; i++) {
       for (let j = 0; j < actionReaction[i].length; j++) {
@@ -125,28 +126,33 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         part = part.charAt(0).toUpperCase() + part.slice(1);
         const service = await Service.findOne({name: part});
         if (!service) return next(new ErrorHandler("Service not found", 404));
-        let field = "none";
+        let field = {name: "none", type: "text"};
         if (j === 0) {
              for (let k = 0; k < service.actions.length; k++) {
+               console.log("service.actions[k].name here :", service.actions[k].name);
                 if (service.actions[k].name === actionReaction[i][j].split("|")[0]) {
-                   field = service.actions[k].fields.name;
+                   field = service.actions[k].fields;
+                   console.log("field here :", field);
                  }
              }
         } else if (j === 1) {
             for (let k = 0; k < service.reactions.length; k++) {
                 if (service.reactions[k].name === actionReaction[i][j].split("|")[0]) {
-                  field = service.reactions[k].fields.name;
+                  field = service.reactions[k].fields;
                 }
             }
         }
         const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
         const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
         if (!apikey) return next(new ErrorHandler("Api key not found", 404));
-        if (field == "webhook") {
+        if (field[0].name == "webhook") {
+            console.log("webhook here :", actionReaction[i][j].split("|")[1]);
             apikey.webhook = actionReaction[i][j].split("|")[1];
-        } else if (field == "channel") {
+        } else if (field[0].name == "channel") {
+          console.log("channel here :", actionReaction[i][j].split("|")[1]);
           apikey.channel = actionReaction[i][j].split("|")[1];
         }
+        console.log("apikey here :", apikey);
         await apikey.save();
         actionReaction[i][j] = actionReaction[i][j].split("|")[0];
       }
