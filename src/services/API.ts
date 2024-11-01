@@ -24,7 +24,7 @@ export class APIRouter implements API {
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
-    ["youtube", new YoutubeApi()]
+    ["youtube", new YoutubeApi()],
     ["github", new GithubRoutes()]
   ]);
 
