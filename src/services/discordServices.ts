@@ -200,12 +200,11 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
           return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
-        res.redirect(`${process.env.FRONT_URL}/services`);
         if (tokens.accessToken) {
           if (tokens.refreshToken) {
             await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
           } else await createAndUpdateApiKey(tokens.accessToken, "", user_uid, "discord");
-          return;
+          return res.status(200).send("Google account linked, come back to the app");
         } else {
           console.error("Access token or refresh token is missing");
           return res.status(500).send("Internal Server Error");
@@ -252,7 +251,6 @@ discordRouter.get("/discord/logout", async (req, res) => {
     if (!userToken) {
       return res.status(401).json({error: "Unauthorized"});
     }
-    res.redirect(`${process.env.FRONT_URL}/services`);
     return res.status(200).json({message: "User deleted successfully"});
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);

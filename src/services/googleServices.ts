@@ -222,14 +222,13 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
             if (!user) {
                 return res.status(400).json({message: "User not found"});
             }
-            return res.redirect(`${process.env.FRONT_URL}/login/?token=${user.user_token}`);
+            return res.redirect(`${process.env.FRONT_URL}/login?token=${user.user_token}`);
         }
         const userToken = await User.findOne({ user_token: authHeader });
         if (!userToken) {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
-        res.redirect(`${process.env.FRONT_URL}/services`);
         if (tokens.access_token) {
             if (tokens.refresh_token) {
                 await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
@@ -238,7 +237,7 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
                 await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
                 await createAndUpdateApiKey(tokens.access_token, "", user_uid, "youtube");
             }
-            return;
+            return res.status(200).send("Google account linked, come back to the app");
         } else {
             console.error("Access token or refresh token is missing");
             return res.status(500).json("Internal Server Error");
@@ -255,7 +254,6 @@ googleRouter.get("/google/logout", async (req, res) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        res.redirect(`${process.env.FRONT_URL}/services`);
         return res.status(200).json({message: "User deleted successfully"});
     } catch (error) {
         console.error("Error in /api/google/auth route:", error);

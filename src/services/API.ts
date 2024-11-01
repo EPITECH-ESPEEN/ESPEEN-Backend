@@ -23,7 +23,7 @@ export class APIRouter implements API {
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
-      ["youtube", new YoutubeApi()]
+    ["youtube", new YoutubeApi()]
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
