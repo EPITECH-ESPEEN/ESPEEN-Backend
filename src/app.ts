@@ -12,13 +12,12 @@ import serviceRoutes from "./routes/serviceRoutes";
 import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
 import discordRouter from "./services/discordServices";
-import facebookRouter from "./services/facebookServices";
 import { serviceRouter } from "./services/API";
 
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: "http://localhost:8081",
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -32,7 +31,7 @@ process.on("uncaughtException", (err) => {
 
 connectDB();
 
-app.use(cors({ origin: "http://localhost:3000", methods: ["GET", "POST", "DELETE", "PUT"] }));
+app.use(cors({ origin: "http://localhost:8081", methods: ["GET", "POST", "DELETE", "PUT"] }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
@@ -41,7 +40,6 @@ app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
 app.use("/api", discordRouter);
-app.use("/api", facebookRouter);
 app.use("/api", githubRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);

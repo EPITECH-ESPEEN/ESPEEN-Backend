@@ -112,7 +112,7 @@ export const getOAuth = async (req: Request, res: Response, next: NextFunction) 
     if (!facebook_service) {
       return res.status(404).json({ error: "Service not found" });
     }
-    return res.status(200).json({ facebook_service });
+    return res.status(200).json({ service });
   } catch (error) {
     console.error("Error in /api/oauth route:", error);
     return res.status(500).json({ error: "Failed to process OAuth" });

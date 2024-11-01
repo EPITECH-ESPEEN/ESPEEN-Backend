@@ -3,6 +3,7 @@ import ApiKey from "../models/apiKeyModels";
 import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/errorHandler";
 import { getFormattedToken } from "../utils/token";
+import Service from "../models/serviceModel";
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -77,7 +78,31 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     if (!token) return next(new ErrorHandler("User token not found", 404));
     const user = await User.findOne({ user_token: token });
     if (!user) return next(new ErrorHandler("User not found", 404));
-    return res.status(200).json({ user });
+    let actionReaction = user.actionReaction;
+    for (let i = 0; i < actionReaction.length; i++) {
+      for (let j = 0; j < actionReaction[i].length; j++) {
+        let part = actionReaction[i][j].split(".")[0];
+        part = part.charAt(0).toUpperCase() + part.slice(1);
+        const service = await Service.findOne({name: part});
+        if (!service) return next(new ErrorHandler("Service not found", 404));
+        const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
+        if (!apikey) return next(new ErrorHandler("Api key not found", 404));
+        if (apikey.webhook) {
+          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
+        } else if (apikey.channel) {
+          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+        }
+      }
+    }
+    const formattedUser = {
+        uid: user.uid,
+        username: user.username,
+        email: user.email,
+        actionReaction: actionReaction,
+    }
+
+    return res.status(200).json({ formattedUser });
     } catch (error) {
       console.error("Error in /api/user route:", error);
       return res.status(500).json({ error: "Failed to process user" });
@@ -93,6 +118,39 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const {username, email, actionReaction} = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
+
+    for (let i = 0; i < actionReaction.length; i++) {
+      for (let j = 0; j < actionReaction[i].length; j++) {
+        let part = actionReaction[i][j].split("|")[0].split(".")[0];
+        part = part.charAt(0).toUpperCase() + part.slice(1);
+        const service = await Service.findOne({name: part});
+        if (!service) return next(new ErrorHandler("Service not found", 404));
+        let field = "none";
+        if (j === 0) {
+             for (let k = 0; k < service.actions.length; k++) {
+                if (service.actions[k].name === actionReaction[i][j].split("|")[0]) {
+                   field = service.actions[k].fields.name;
+                 }
+             }
+        } else if (j === 1) {
+            for (let k = 0; k < service.reactions.length; k++) {
+                if (service.reactions[k].name === actionReaction[i][j].split("|")[0]) {
+                  field = service.reactions[k].fields.name;
+                }
+            }
+        }
+        const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
+        const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
+        if (!apikey) return next(new ErrorHandler("Api key not found", 404));
+        if (field == "webhook") {
+            apikey.webhook = actionReaction[i][j].split("|")[1];
+        } else if (field == "channel") {
+          apikey.channel = actionReaction[i][j].split("|")[1];
+        }
+        await apikey.save();
+        actionReaction[i][j] = actionReaction[i][j].split("|")[0];
+      }
+    }
     user.actionReaction = actionReaction || user.actionReaction;
     await user.save();
     return res.status(200).json({user});

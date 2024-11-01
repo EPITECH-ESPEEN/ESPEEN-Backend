@@ -5,8 +5,9 @@ import express from "express";
 import dotenv from "dotenv";
 import { google } from "googleapis";
 import User from "../models/userModel";
-import { createAndUpdateApiKey } from "../controllers/apiKeyController";
-import { getFormattedToken } from "../utils/token";
+import {createAndUpdateApiKey} from "../controllers/apiKeyController";
+import {getFormattedToken} from "../utils/token";
+import {YoutubeRoutes} from "./youtubeServices";
 
 export async function isAuthToGoogle(user_uid: number) {
     const tokens = await ApiKey.find({ user_id: user_uid });
@@ -98,24 +99,16 @@ export class GmailRoutes implements API {
         if (!this.RouteMap.has(routes)) return null;
         const route = this.RouteMap.get(name);
         if (route === undefined) return null;
-        if (name === "recep_email") return await route(user_uid);
+        if (name === "receive_email") return await route(user_uid);
         if (params) return await route(params);
         return await route();
-    }
-}
-
-export class DriveRoutes implements API {
-    ApiMap: Map<string, API> = new Map<string, API>();
-
-    redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
-        return null;
     }
 }
 
 export class GoogleApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>([
         ["gmail", new GmailRoutes()],
-        ["drive", new DriveRoutes()],
+        ["youtube", new YoutubeRoutes()],
     ]);
 
     redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -129,7 +122,11 @@ const googleRouter = express.Router();
 dotenv.config();
 
 const oauth2Client = new google.auth.OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, process.env.GOOGLE_CALLBACK); // const {GoogleAuth} = require('google-auth-library') ?
-const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/gmail.send"];
+const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/gmail.send",
+                "https://www.googleapis.com/auth/youtube"];
 let previousMessageIds: string[] = [];
 
 async function checkEmails(user_uid: string) {
@@ -214,7 +211,15 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
 
         const authHeader = req.cookies.authToken;
         if (!authHeader) {
-            return res.status(401).json({ error: "Authorization header is missing" });
+            const db_token = await ApiKey.findOne({access_token: tokens.access_token});
+            if (!db_token) {
+                return res.status(400).json({message: "Google account not linked"});
+            }
+            const user = await User.findOne({uid: db_token.user_id});
+            if (!user) {
+                return res.status(400).json({message: "User not found"});
+            }
+            return res.redirect(`${process.env.FRONT_URL}/login/?token=${user.user_token}`);
         }
         const userToken = await User.findOne({ user_token: authHeader });
         if (!userToken) {
@@ -225,14 +230,18 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
         if (tokens.access_token) {
             if (tokens.refresh_token) {
                 await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
-            } else await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
+                await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "youtube");
+            } else {
+                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
+                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "youtube");
+            }
             return;
         } else {
             console.error("Access token or refresh token is missing");
-            return res.status(500).send("Internal Server Error");
+            return res.status(500).json("Internal Server Error");
         }
     } else {
-        return res.status(400).send("Code de validation manquant");
+        return res.status(400).json("Code de validation manquant");
     }
 });
 

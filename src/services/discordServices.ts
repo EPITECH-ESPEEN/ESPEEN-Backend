@@ -12,9 +12,12 @@ import {getFormattedToken} from "../utils/token";
 export const discordMessageWebhook = async (message: any) => {
   if (message === undefined) return null;
   const uid: number = message.user_uid;
-  const users: any = await ApiKey.findOne({ user_id: uid, service: "discord" });
+  const users = await ApiKey.findOne({ user_id: uid, service: "discord" });
   if (!users) return null;
-  const response = await fetch(users.webhook, {
+  const webhook = users.webhook;
+  if (!webhook) return null;
+
+  const response = await fetch(webhook, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -33,7 +36,9 @@ export const checkMessageChannel = async (message: any) => {
   if (message === undefined) return
   const user = await ApiKey.findOne({ user_id: message, service: "discord" });
   if (!user) return null;
-  const url = `https://discord.com/api/v9/channels/${user.channel}/messages`;
+  const channel = user.channel;
+    if (!channel) return null;
+  const url = `https://discord.com/api/v9/channels/${channel}/messages`;
   try {
     const response = await fetch(url, {
       method: "GET",
