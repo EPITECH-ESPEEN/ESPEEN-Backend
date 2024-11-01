@@ -34,7 +34,7 @@ export const getActionReactionById = async (req: Request, res: Response, next: N
 // Create a new actionReaction : /api/actionReactions
 export const createActionReaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user || req.user.role !== UserRole.ADMIN) {
+    if (!req.user || (req.user as any).role !== UserRole.ADMIN) {
       return next(new ErrorHandler("Unauthenticated", 401));
     }
     const actionReaction = await ActionReaction.create(req.body);
@@ -51,7 +51,7 @@ export const createActionReaction = async (req: Request, res: Response, next: Ne
 // Update a actionReaction by id : /api/actionReactions/:id
 export const updateActionReaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user || req.user.role !== UserRole.ADMIN) {
+    if (!req.user || (req.user as any).role !== UserRole.ADMIN) {
       return next(new ErrorHandler("Unauthenticated", 401));
     }
     const actionReaction = await ActionReaction.findByIdAndUpdate(req.params.id, req.body, {
@@ -74,7 +74,7 @@ export const updateActionReaction = async (req: Request, res: Response, next: Ne
 // Delete a actionReaction by id : /api/actionReactions/:id
 export const deleteActionReaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user || req.user.role !== UserRole.ADMIN) {
+    if (!req.user || (req.user as any).role !== UserRole.ADMIN) {
       return next(new ErrorHandler("Unauthenticated", 401));
     }
     const actionReaction = await ActionReaction.findByIdAndDelete(req.params.id);
