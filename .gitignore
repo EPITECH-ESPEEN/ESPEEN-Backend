@@ -3,3 +3,4 @@
 node_modules/
 *.env
 espeen-ez-o7-creds.json
+!/dist/
