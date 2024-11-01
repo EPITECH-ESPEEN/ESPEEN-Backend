@@ -1,10 +1,9 @@
 import ApiKey from "../models/apiKeyModels";
 import axios from "axios";
-import fs from "fs";
-import {API} from "../utils/interfaces";
+import { API } from "../utils/interfaces";
 import express from "express";
 import dotenv from "dotenv";
-import {google} from "googleapis";
+import { google } from "googleapis";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {getFormattedToken} from "../utils/token";
@@ -40,9 +39,9 @@ export async function getUserEmail(user_uid: string) {
     };
 
     try {
-        const response = await axios.get(url, config);
+        const response: any = await axios.get(url, config);
         return response.data.email;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Erreur lors de la récupération de l'email :", error.response ? error.response.data : error.message);
         return null;
     }
@@ -50,8 +49,6 @@ export async function getUserEmail(user_uid: string) {
 
 export async function sendEmails(message: any) {
     if (message === undefined) return null;
-    console.log("Sending email to user:", message);
-    const serviceAccount = JSON.parse(fs.readFileSync("espeen-ez-o7-creds.json", "utf-8"));
     const tokens = await ApiKey.findOne({ user_id: message.user_uid, service: "google" });
 
     const email_u = await getUserEmail(message.user_uid);
@@ -66,7 +63,7 @@ export async function sendEmails(message: any) {
         return null;
     }
 
-    const email = `To: ${email_u}\r\n` + "Subject: Meteo de ESPEEN\r\n\r\n" + `${message.data}`;
+    const email = `To: ${email_u}\r\n` + "Subject: EPSEEN Reaction\r\n\r\n" + `${message.data}`;
 
     const encodedMessage = Buffer.from(email).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -83,10 +80,11 @@ export async function sendEmails(message: any) {
     };
 
     try {
-        const response = await axios.post(url, data, config);
-    } catch (error) {
+        await axios.post(url, data, config);
+    } catch (error: any) {
         console.error("Erreur lors de l'envoi de l'email :", error.response ? error.response.data : error.message);
     }
+    return true;
 }
 
 export class GmailRoutes implements API {
@@ -112,7 +110,6 @@ export class GoogleApi implements API {
     ]);
 
     redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
-        // ? Perhaps add security to verify if user is auth to DB
         if (!this.ApiMap.has(name)) return null;
         if (params) return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), params, access_token, user_uid);
         return this.ApiMap.get(name)?.redirect_to(routes.split(".")[0], routes.replace(routes.split(".")[0] + ".", ""), undefined, access_token, user_uid);
@@ -141,10 +138,8 @@ async function checkEmails(user_uid: string) {
     let accessToken = tokens.api_key;
     let refreshToken = tokens.refresh_token;
 
-    // Check if access token is expired
     if (oauth2Client.credentials.expiry_date && oauth2Client.credentials.expiry_date <= Date.now()) {
         try {
-            // Refresh the token using the stored refresh token
             let { token: accessToken } = await oauth2Client.getAccessToken();
             accessToken = oauth2Client.credentials.access_token;
 

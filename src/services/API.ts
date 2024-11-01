@@ -17,6 +17,7 @@ import { DiscordApi } from "./discordServices";
 import { YoutubeApi } from "./youtubeServices";
 import apiKeyModels from "../models/apiKeyModels";
 import User from "../models/userModel";
+import {GithubRoutes} from "./githubService";
 
 export class APIRouter implements API {
   ApiMap: Map<string, API> = new Map<string, API>([
@@ -24,6 +25,7 @@ export class APIRouter implements API {
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
     ["youtube", new YoutubeApi()]
+    ["github", new GithubRoutes()]
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -40,24 +42,24 @@ export function serviceRouter() {
   setInterval(async () => {
     const users = await User.find({});
     for (let i = 0; i < users.length; i++) {
-      console.log("User: ", users[i].uid);
       let user_services: string[][] | undefined = users[i].actionReaction;
       if (user_services === undefined) {
-        return;
+        continue;
+      } else if (user_services.length === 0) {
+        continue;
       }
       const user_routes = user_services[0];
-      for (let user_service in user_routes) {
-        switch (user_routes[user_service].split(".")[0]) {
+      for (let user_service of user_routes) {
+        switch (user_service.split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
-              return;
+              continue;
             }
             break;
           case "meteo":
-            break;
           case "discord":
-            break;
           case "facebook":
+          case "github":
             break;
           default:
             return;
@@ -65,20 +67,19 @@ export function serviceRouter() {
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 
-        for (let key in user_routes) {
-          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: user_routes[key].split(".")[0] }).select("api_key");
+        for (let key of user_routes) {
+          const apiKeyDoc = await apiKeyModels.findOne({ user: users[i].uid, service: key.split(".")[0] }).select("api_key");
           if (apiKeyDoc) {
             access_token = apiKeyDoc.api_key;
           }
-          let service: string[] = user_routes[key].split(".");
+          let service: string[] = key.split(".");
           if (results === undefined) {
-            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), undefined, access_token, users[i].uid);
+            results = await routerAPI.redirect_to(service[0], key.replace(service[0] + ".", ""), undefined, access_token, users[i].uid.toString());
           } else {
-            results = await routerAPI.redirect_to(service[0], user_routes[key].replace(service[0] + ".", ""), results, access_token, users[i].uid);
+            results = await routerAPI.redirect_to(service[0], key.replace(service[0] + ".", ""), results, access_token, users[i].uid.toString());
           }
         }
       }
     }
   }, 20000);
 }
-

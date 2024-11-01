@@ -85,9 +85,9 @@ export const getUserProfile = async (req: any, res: Response, next: NextFunction
 };
 
 // Update user profile : /api/profile
-export const setUserProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const setUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userUid = req.user?.uid;
+    const userUid = (req as AuthenticatedRequest).user?.uid;
     if (!userUid) {
       return res.status(400).json({ message: "User ID not provided" });
     }
@@ -108,11 +108,11 @@ export const setUserProfile = async (req: AuthenticatedRequest, res: Response, n
 
 export const getOAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const service = await Service.findOne({ name: "google" });
-    if (!service) {
+    const facebook_service = await Service.findOne({ name: "Facebook" });
+    if (!facebook_service) {
       return res.status(404).json({ error: "Service not found" });
     }
-    return res.status(200).json({ service });
+    return res.status(200).json({ facebook_service });
   } catch (error) {
     console.error("Error in /api/oauth route:", error);
     return res.status(500).json({ error: "Failed to process OAuth" });

@@ -22,7 +22,7 @@ twitchRouter.use(passport.session());
 passport.serializeUser((user, done) => {
     done(null, user);
 });
-passport.deserializeUser((user, done) => {
+passport.deserializeUser((user: any, done) => {
     done(null, user);
 });
 

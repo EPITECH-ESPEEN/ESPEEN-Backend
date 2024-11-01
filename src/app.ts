@@ -6,6 +6,7 @@ import aboutJSON from "./routes/aboutJSON";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
+import githubRouter from "./services/githubService"
 import userRoutes from "./routes/usersRoutes";
 import serviceRoutes from "./routes/serviceRoutes";
 import googleRouter from "./services/googleServices";
@@ -39,6 +40,7 @@ app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
 app.use("/api", discordRouter);
+app.use("/api", githubRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);
 

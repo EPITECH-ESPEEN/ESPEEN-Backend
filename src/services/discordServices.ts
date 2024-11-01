@@ -53,7 +53,7 @@ export const checkMessageChannel = async (message: any) => {
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => lastMessageId && msg.id > lastMessageId);
+    const newMessages = discordMessages.filter((msg: any) => (lastMessageId === null) ? true : msg.id > lastMessageId);
 
     if (newMessages.length === 0) {
       console.log("No new messages in the channel.");

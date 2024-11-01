@@ -10,7 +10,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-export const isAuthenticatedUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const isAuthenticatedUser = async (req: Request, res: Response, next: NextFunction) => {
   const token = getFormattedToken(req);
   if (!token) return next(new ErrorHandler("User token not found", 404));
   const user = User.findOne({ token });
