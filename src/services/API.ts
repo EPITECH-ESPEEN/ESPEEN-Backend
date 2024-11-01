@@ -42,7 +42,7 @@ export function serviceRouter() {
     for (let i = 0; i < users.length; i++) {
       let user_services: string[][] | undefined = users[i].actionReaction;
       if (user_services === undefined) {
-        return;
+        continue;
       } else if (user_services.length === 0) {
         continue;
       }
@@ -51,7 +51,7 @@ export function serviceRouter() {
         switch (user_service.split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
-              return;
+              continue;
             }
             break;
           case "meteo":
