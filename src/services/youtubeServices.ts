@@ -81,7 +81,7 @@ export async function checkRecentVideosFromSubscriptions(user_uid: string) {
 }
 
 
-export class YoutubeRoutes implements API {
+export class YoutubeApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
     RouteMap: Map<string, Function> = new Map<string, Function>([
         ["new_video", checkRecentVideosFromSubscriptions],

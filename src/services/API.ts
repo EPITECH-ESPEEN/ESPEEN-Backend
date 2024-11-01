@@ -14,6 +14,7 @@ import { API } from "../utils/interfaces";
 import { MeteoApi } from "./weatherServices";
 import { GoogleApi, isAuthToGoogle } from "./googleServices";
 import { DiscordApi } from "./discordServices";
+import { YoutubeApi } from "./youtubeServices";
 import apiKeyModels from "../models/apiKeyModels";
 import User from "../models/userModel";
 
@@ -22,6 +23,7 @@ export class APIRouter implements API {
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
+      ["youtube", new YoutubeApi()]
   ]);
 
   redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -38,7 +40,8 @@ export function serviceRouter() {
   setInterval(async () => {
     const users = await User.find({});
     for (let i = 0; i < users.length; i++) {
-      let user_services: { [key: string]: string } | undefined = users[i].actionReaction;
+      console.log("User: ", users[i].uid);
+      let user_services: string[][] | undefined = users[i].actionReaction;
       if (user_services === undefined) {
         return;
       }

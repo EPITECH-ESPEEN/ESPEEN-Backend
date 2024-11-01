@@ -102,7 +102,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
         actionReaction: actionReaction,
     }
 
-    return res.status(200).json({ formattedUser });
+    return res.status(200).json({ user: formattedUser });
     } catch (error) {
       console.error("Error in /api/user route:", error);
       return res.status(500).json({ error: "Failed to process user" });

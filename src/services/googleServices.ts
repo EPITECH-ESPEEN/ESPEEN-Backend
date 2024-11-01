@@ -8,7 +8,6 @@ import {google} from "googleapis";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {getFormattedToken} from "../utils/token";
-import {YoutubeRoutes} from "./youtubeServices";
 
 export async function isAuthToGoogle(user_uid: number) {
     const tokens = await ApiKey.find({ user_id: user_uid });
@@ -109,8 +108,7 @@ export class GmailRoutes implements API {
 
 export class GoogleApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>([
-        ["gmail", new GmailRoutes()],
-        ["youtube", new YoutubeRoutes()],
+        ["gmail", new GmailRoutes()]
     ]);
 
     redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {

@@ -7,7 +7,6 @@ import passport from "passport";
 import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
-import {isAuthenticatedUser} from "../middlewares/userAuthentication";
 import {getFormattedToken} from "../utils/token";
 
 export const discordMessageWebhook = async (message: any) => {
@@ -54,7 +53,7 @@ export const checkMessageChannel = async (message: any) => {
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => msg.id > lastMessageId);
+    const newMessages = discordMessages.filter((msg: any) => lastMessageId && msg.id > lastMessageId);
 
     if (newMessages.length === 0) {
       console.log("No new messages in the channel.");
@@ -174,14 +173,18 @@ discordRouter.get("/discord/auth", (req, res) => {
   passport.authenticate("discord")(req, res);
 });
 
+interface DiscordUser {
+    accessToken: string;
+    refreshToken: string;
+}
+
 discordRouter.get("/discord/callback", passport.authenticate("discord", {
       failureRedirect: "/login",
       session: true,
     }),
     async (req, res) => {
-      const tokens = req.user;
+      const tokens: DiscordUser = req.user as DiscordUser;
 
-      console.log("Access token:", tokens);
       if (!tokens) {
         return res.status(500).send("Internal Server Error");
       }
