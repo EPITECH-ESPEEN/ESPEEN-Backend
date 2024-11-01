@@ -88,10 +88,29 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
         const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
         const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
         if (!apikey) return next(new ErrorHandler("Api key not found", 404));
-        if (apikey.webhook) {
-          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
-        } else if (apikey.channel) {
-          actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+        let field = {name: "none", type: "text"};
+        if (j === 0) {
+            for (let k = 0; k < service.actions.length; k++) {
+                if (service.actions[k].name === actionReaction[i][j]) {
+                  field = service.actions[k].fields;
+                    if (apikey.webhook && field[0].name === "webhook") {
+                      actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
+                    } else if (apikey.channel && field[0].name === "channel") {
+                      actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+                    }
+                }
+            }
+        } else if (j === 1) {
+            for (let k = 0; k < service.reactions.length; k++) {
+              field = service.reactions[k].fields;
+                if (service.reactions[k].name === actionReaction[i][j]) {
+                  if (apikey.webhook && field[0].name === "webhook") {
+                    actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
+                  } else if (apikey.channel && field[0].name === "channel") {
+                    actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+                  }
+                }
+            }
         }
       }
     }
