@@ -71,7 +71,6 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
     }
 }
 
-//TODO : Set field message in Front
 export async function updateTwitchUserDescription(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
@@ -373,8 +372,6 @@ export async function getTwitchChannelSubscriptions(message: any): Promise<any |
     }
 }
 
-//TODO NEW
-//TODO : Set field message in Front
 export async function sendTwitchChatAnnouncement(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -400,7 +397,7 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
     };
 
     const data = {
-        message: "TODO: Twitch API | retrieve message announcement from field in Front"
+        message: tokens.description,
     }
 
     try {
