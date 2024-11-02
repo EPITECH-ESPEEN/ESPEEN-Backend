@@ -13,9 +13,9 @@ export const discordMessageWebhook = async (message: any) => {
   if (message === undefined) return null;
   const uid: number = message.user_uid;
   const users = await ApiKey.findOne({ user_id: uid, service: "discord" });
-  if (!users) return null;
+  if (!users) return message;
   const webhook = users.webhook;
-  if (!webhook) return null;
+  if (!webhook) return message;
 
   const response = await fetch(webhook, {
     method: "POST",
@@ -25,9 +25,11 @@ export const discordMessageWebhook = async (message: any) => {
     body: JSON.stringify({ content: message.data }),
   });
   if (!response.ok) {
-    return console.log("Error while sending message to Discord");
+    console.log("Error while sending message to Discord");
+    return message;
   }
-  return console.log("Message sent to Discord");
+  console.log("Message sent to Discord");
+  return message;
 };
 
 export const checkMessageChannel = async (message: any) => {
