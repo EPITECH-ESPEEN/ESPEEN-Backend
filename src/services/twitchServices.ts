@@ -10,8 +10,6 @@ import ApiKey from "../models/apiKeyModels";
 import { API } from "../utils/interfaces";
 import { createAndUpdateApiKey } from "../controllers/apiKeyController";
 import {getFormattedToken} from "../utils/token";
-//TODO : fix and add isAuthenticatedUser middleware on Routes
-// import { isAuthenticatedUser } from "../middlewares/userAuthentication";
 
 export class TwitchApi implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
