@@ -7,6 +7,7 @@ export interface IApiKey extends mongoose.Document {
   service: string;
   webhook?: string;
   channel?: string;
+  city?: string;
 }
 
 const apiKeySchema = new mongoose.Schema(
@@ -35,6 +36,10 @@ const apiKeySchema = new mongoose.Schema(
         type: String,
         required: [false, "Channel is not required"],
     },
+    city: {
+        type: String,
+        required: [false, "City is not required"],
+    }
   },
   { timestamps: true }
 );
