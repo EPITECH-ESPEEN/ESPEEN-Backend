@@ -21,6 +21,9 @@ export class TwitchApi implements API {
         ["get_channel_infos", getTwitchChannelInfo],
         ["get_user_clips", getTwitchUserClips],
         ["get_top_games", getTwitchTopGames],
+        ["get_followed_channels", getTwitchFollowedChannels],
+        ["get_channel_subscriptions", getTwitchChannelSubscriptions],
+        ["send_chat_announcement", sendTwitchChatAnnouncement],
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -68,7 +71,7 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
     }
 }
 
-
+//TODO : Set field message in Front
 export async function updateTwitchUserDescription(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
@@ -294,6 +297,126 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
     }
 }
 
+//TODO NEW 
+export async function getTwitchFollowedChannels(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", uid);
+        return message;
+    }
+
+    const accessToken = tokens.api_key;
+    const user_id = await getUserIdFromAccessToken(message);
+    if (!user_id) {
+        console.error("No Twitch user_id found for user :", uid);
+        return message;
+    }
+    let url = `https://api.twitch.tv/helix/channels/followed?user_id=${user_id}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Channels followed : ${JSON.stringify(response.data)}`);
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
+    } catch (error) {
+        console.error("Error fetching followed channels from Twitch:", error);
+        return message;
+    }
+}
+
+//TODO NEW
+export async function getTwitchChannelSubscriptions(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", uid);
+        return message;
+    }
+
+    const accessToken = tokens.api_key;
+    const user_id = await getUserIdFromAccessToken(message);
+    if (!user_id) {
+        console.error("No broadcaster_id found for user :", uid);
+        return message;
+    }
+    let url = `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${user_id}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+        },
+    };
+
+    try {
+        const response = await axios.get(url, config);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Channel subscriptions : ${JSON.stringify(response.data)}`);
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
+    } catch (error) {
+        console.error("Error fetching channel subscriptions clips from Twitch:", error);
+        return message;
+    }
+}
+
+//TODO NEW
+//TODO : Set field message in Front
+export async function sendTwitchChatAnnouncement(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", uid);
+        return message;
+    }
+
+    const accessToken = tokens.api_key;
+    const user_id = await getUserIdFromAccessToken(message);
+    if (!user_id) {
+        console.error("No broadcaster_id found for user :", uid);
+        return message;
+    }
+    let url = `https://api.twitch.tv/helix/chat/announcements?broadcaster_id=${user_id}&moderator_id=${user_id}`;
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+            "Content-Type": "application/json",
+        },
+    };
+
+    const data = {
+        message: "TODO: Twitch API | retrieve message announcement from field in Front"
+    }
+
+    try {
+        const response = await axios.post(url, data, config);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Chat announcement return status (204 Successfully sent the announcement) : ${response.status}`);
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
+    } catch (error) {
+        console.error("Error send Twitch chat announcement:", error);
+        return message;
+    }
+}
+
 
 //////////// OAuth2 ////////////
 
@@ -356,10 +479,13 @@ passport.use('twitch', new OAuth2Strategy({
 
 twitchRouter.get('/twitch/auth', passport.authenticate('twitch', { 
     scope: [
-            'user:edit',
+            'channel:manage:moderators',
+            'channel:read:subscriptions',
+            'moderator:manage:announcements',
             'moderator:manage:banned_users',
             'moderation:read',
-            'channel:manage:moderators'
+            'user:edit',
+            'user:read:follows',
         ]
 }));
 
