@@ -35,12 +35,19 @@ export class TwitchApi implements API {
 
 //////////// Reactions ////////////
 
-//INFO : More an utils function than a reaction
-export async function getUserIdFromAccessToken(accessToken: string): Promise<string | null> {
+//INFO : More an util function than a reaction
+export async function getUserIdFromAccessToken(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
+    if (!tokens || !tokens.api_key) {
+        console.error("No Twitch tokens found for user:", uid);
+        return null;
+    }
+
     let url = "https://api.twitch.tv/helix/users";
     const config = {
         headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${tokens.api_key}`,
             "Client-ID": process.env.TWITCH_CLIENT_ID,
         },
     };
@@ -61,8 +68,9 @@ export async function getUserIdFromAccessToken(accessToken: string): Promise<str
     }
 }
 
-//TO CHECK : if it's correct to retrieve accessToken like this (same logic for all reactions)
-//TODO : Description should be dynamic `export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {`
+//TO CHECK: If don't work try with description in body req:
+// const response = await axios.put(url, { description: descriptionUpdated }, config)
+// and delete `?description=${descriptionUpdated}` from url
 export async function updateTwitchUserDescription(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
@@ -74,7 +82,7 @@ export async function updateTwitchUserDescription(message: any) {
     let accessToken = tokens.api_key;
     let descriptionUpdated = message.data;
 
-    let url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
+    let url = `https://api.twitch.tv/helix/users?description=${descriptionUpdated}`;
     const config = {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -82,6 +90,7 @@ export async function updateTwitchUserDescription(message: any) {
             "Content-Type": "application/json"
         },
     };
+
     try {
         const response = await axios.put(url, {}, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch Reaction | Update user description data res : ${response.data}`);
@@ -92,8 +101,7 @@ export async function updateTwitchUserDescription(message: any) {
     }
 }
 
-//TO CHECK : Requires a user access token that includes the moderation:read or moderator:manage:banned_users scope.
-//TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
+
 export async function getTwitchBannedUser(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -103,7 +111,6 @@ export async function getTwitchBannedUser(message: any) {
     }
 
     let accessToken = tokens.api_key;
-    //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -128,8 +135,6 @@ export async function getTwitchBannedUser(message: any) {
     }
 }
 
-//TO CHECK : Requires a user access token that includes the moderation:read or moderator:manage:banned_users scope.
-//TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
 export async function getTwitchModerators(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -139,7 +144,6 @@ export async function getTwitchModerators(message: any) {
     }
 
     const accessToken = tokens.api_key;
-    //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -165,7 +169,6 @@ export async function getTwitchModerators(message: any) {
 }
 
 //INFO : This request no need moderated scope (broadcaster_id can be what we want)
-//TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
 export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -175,7 +178,6 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     }
 
     const accessToken = tokens.api_key;
-    //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -195,10 +197,10 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
         const responseData = response.data as { data: any[] };
         const channelData = responseData.data[0];
         if (channelData) {
-            console.log(`Channel information retrieved: ${JSON.stringify(channelData)}`);
+            console.log(`Twitch channel information retrieved: ${JSON.stringify(channelData)}`);
             return channelData;
         } else {
-            console.error("Channel data not found in response");
+            console.error("Twitch channel data not found in response");
             return null;
         }
     } catch (error) {
@@ -208,7 +210,8 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
 }
 
 //INFO : This request no need moderated scope (broadcaster_id can be what we want)
-export async function getTwitchUserClips(message: any): Promise<any | null> {
+//INFO : "first" parameter is optional (is the maximum number of items to return)
+export async function getTwitchUserClips(message: any, first: number = 5): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
@@ -217,13 +220,12 @@ export async function getTwitchUserClips(message: any): Promise<any | null> {
     }
 
     const accessToken = tokens.api_key;
-    //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
         return null;
     }
-    let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}`;
+    let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}?first=${first}`;
 
     const config = {
         headers: {
@@ -234,7 +236,7 @@ export async function getTwitchUserClips(message: any): Promise<any | null> {
 
     try {
         const response = await axios.get(url, config);
-        console.log(`Clips data retrieved: ${JSON.stringify(response.data)}`);
+        console.log(`Twitch clips data retrieved: ${JSON.stringify(response.data)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching clips from Twitch:", error);
@@ -243,10 +245,11 @@ export async function getTwitchUserClips(message: any): Promise<any | null> {
 }
 
 //INFO : "first" parameter is optional (is the maximum number of items to return)
-export async function getTwitchTopGames(user_id: string, first: number = 10): Promise<any | null> {
-    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+export async function getTwitchTopGames(message: any, first: number = 5): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user:", user_id);
+        console.error("No Twitch tokens found for user:", uid);
         return null;
     }
 
