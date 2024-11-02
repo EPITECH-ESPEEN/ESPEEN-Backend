@@ -81,7 +81,7 @@ export async function updateTwitchUserDescription(message: any) {
     }
 
     let accessToken = tokens.api_key;
-    let descriptionUpdated = message.data;
+    let descriptionUpdated = tokens.description;
 
     let url = `https://api.twitch.tv/helix/users?description=${descriptionUpdated}`;
     const config = {
