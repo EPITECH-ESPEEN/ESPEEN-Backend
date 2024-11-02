@@ -190,7 +190,7 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
           if (tokens.refreshToken) {
             await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
           } else await createAndUpdateApiKey(tokens.accessToken, "", user_uid, "discord");
-          return res.status(200).send("Google account linked, come back to the app");
+          return res.status(200).send("Discord account linked, come back to the app");
         } else {
           console.error("Access token or refresh token is missing");
           return res.status(500).send("Internal Server Error");

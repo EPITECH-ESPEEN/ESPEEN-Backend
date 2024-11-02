@@ -338,7 +338,6 @@ twitchRouter.get('/twitch/auth', passport.authenticate('twitch', {
             'user:edit',
             'moderator:manage:banned_users',
             'moderation:read',
-            'moderated',
             'channel:manage:moderators'
         ]
 }));
@@ -368,7 +367,7 @@ twitchRouter.get('/twitch/callback', passport.authenticate('twitch', {
             } else {
                 await createAndUpdateApiKey(accessToken, "", userAuthentifiedUid, "twitch");
             }
-            return res.status(200).send("Google account linked, come back to the app");
+            return res.status(200).send("Twitch account linked, come back to the app");
         } else {
             console.error("Access token or refresh token is missing");
             return res.status(500).send("Internal Server Error");
