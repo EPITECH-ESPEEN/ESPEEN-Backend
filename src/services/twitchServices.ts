@@ -1,9 +1,12 @@
 import express, { Request, Response } from "express";
+import bodyParser from "body-parser";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as OAuth2Strategy } from "passport-oauth2";
 import axios from "axios";
 import request from "request";
+import https from "https";
+import crypto from "crypto";
 
 import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
@@ -33,6 +36,11 @@ export class TwitchApi implements API {
         return await route(params);
     }
 }
+
+//////////// Actions ////////////
+
+
+
 
 //////////// Reactions ////////////
 
@@ -536,6 +544,105 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
     } catch (error) {
         console.error("Error in /api/twitch/logout route:", error);
         return res.status(500).json({error: "Failed to process user"});
+    }
+});
+
+
+//////////// Webhook ////////////
+//TODO NEW
+//TODO add in .env : process.env.NGROK_TUNNEL_URL
+
+twitchRouter.use(bodyParser.json({
+    verify: (req, res, buf) => {
+        // Small modification to the JSON bodyParser to expose the raw body in the request object
+        // The raw body is required at signature verification
+        req.rawBody = buf
+    }
+}))
+
+twitchRouter.post('/createWebhook/:broadcasterId', (req: Request, res: Response) => {
+    const createWebHookParams = {
+        host: "api.twitch.tv",
+        path: "/helix/eventsub/subscriptions",
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+            "Client-ID": process.env.TWITCH_CLIENT_ID,
+            "Authorization": `Bearer ${authToken}` //TODO : Add authToken from message (= tokens.api_key)
+        }
+    };
+    
+    const createWebHookBody = JSON.stringify({
+        "type": "channel.follow",
+        "version": "1",
+        "condition": {
+            "broadcaster_user_id": req.params.broadcasterId
+        },
+        "transport": {
+            "method": "webhook",
+            "callback": `${process.env.NGROK_TUNNEL_URL}/notification`, // TODO : to update 
+            "secret": process.env.TWITCH_WEBHOOK_SECRET
+        }
+    });
+
+    const webhookReq = https.request(createWebHookParams, (result) => {
+        let responseData = "";
+        result.setEncoding('utf8');
+        result.on('data', (chunk) => {
+            responseData += chunk;
+        });
+        result.on('end', () => {
+            const responseBody = JSON.parse(responseData);
+            res.send(responseBody);
+        });
+    });
+
+    webhookReq.on('error', (e) => {
+        console.error("Error creating Twitch webhook:", e);
+        res.status(500).send("Internal Server Error");
+    });
+
+    webhookReq.write(createWebHookBody);
+    webhookReq.end();
+});
+
+function verifySignature(
+    messageSignature: string,
+    messageID: string,
+    messageTimestamp: string,
+    body: string
+): boolean {
+    const secret = process.env.TWITCH_WEBHOOK_SECRET || "some-random-secret";
+    const message = messageID + messageTimestamp + body;
+    const signature = crypto
+        .createHmac('sha256', secret)
+        .update(message)
+        .digest("hex");
+    
+    return `sha256=${signature}` === messageSignature;
+}
+
+twitchRouter.post('/notification', (req: Request, res: Response) => {
+    const body = req.rawBody.toString();
+
+    if (!verifySignature(
+        req.header("Twitch-Eventsub-Message-Signature") as string,
+        req.header("Twitch-Eventsub-Message-Id") as string,
+        req.header("Twitch-Eventsub-Message-Timestamp") as string,
+        body
+    )) {
+        return res.status(403).send("Forbidden");
+    }
+
+    const messageType = req.header("Twitch-Eventsub-Message-Type");
+
+    if (messageType === "webhook_callback_verification") {
+        res.send(req.body.challenge);
+    } else if (messageType === "notification") {
+        console.log("Twitch Event Data:", req.body.event);
+        res.sendStatus(200);
+    } else {
+        res.sendStatus(400);
     }
 });
 
