@@ -26,7 +26,10 @@ export class TwitchApi implements API {
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
-        return null;
+        if (!this.RouteMap.has(routes)) return null;
+        const route = this.RouteMap.get(name);
+        if (route === undefined) return null;
+        return await route(user_uid);
     }
 }
 

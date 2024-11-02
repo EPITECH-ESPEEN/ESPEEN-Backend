@@ -12,15 +12,12 @@ export const getAllServices = async (req: Request, res: Response, next: NextFunc
     if (!token) return next(new ErrorHandler("User token not found", 404));
     const user = await User.findOne({ user_token: token });
     const subscribed_services = await ApiKey.find({ user_id: user.uid });
-    console.log("subscribed_services");
     const map = subscribed_services.map((service) =>
         service.service.charAt(0).toUpperCase() + service.service.slice(1)
     );
-    console.log("map", map);
     const services = await Service.find({ name: { $in: map } });
     const not_subscribed_services = await Service.find({ name: { $nin: map } }).select("-actions -reactions");
     services.push(...not_subscribed_services);
-    console.log("services", services);
     return res.status(200).json({ services });
   } catch (error) {
     console.log("Error in /api/services route:", error);
