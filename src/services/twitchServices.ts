@@ -330,7 +330,15 @@ passport.use('twitch', new OAuth2Strategy({
     }
 ));
 
-twitchRouter.get('/twitch/auth', passport.authenticate('twitch', { scope: 'user_read' } ));
+twitchRouter.get('/twitch/auth', passport.authenticate('twitch', { 
+    scope: [
+            'user:edit',
+            'moderator:manage:banned_users',
+            'moderation:read',
+            'moderated',
+            'channel:manage:moderators'
+        ]
+}));
 
 twitchRouter.get('/twitch/callback', passport.authenticate('twitch', {
     failureRedirect: '/login'
