@@ -93,6 +93,8 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
             for (let k = 0; k < service.actions.length; k++) {
                 if (service.actions[k].name === actionReaction[i][j]) {
                   field = service.actions[k].fields;
+                  if (field == [])
+                    break;
                     if (apikey.webhook && field[0].name === "webhook") {
                       actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
                     } else if (apikey.channel && field[0].name === "channel") {
@@ -103,6 +105,8 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
         } else if (j === 1) {
             for (let k = 0; k < service.reactions.length; k++) {
               field = service.reactions[k].fields;
+              if (field == [])
+                break;
                 if (service.reactions[k].name === actionReaction[i][j]) {
                   if (apikey.webhook && field[0].name === "webhook") {
                     actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
@@ -148,10 +152,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         let field = {name: "none", type: "text"};
         if (j === 0) {
              for (let k = 0; k < service.actions.length; k++) {
-               console.log("service.actions[k].name here :", service.actions[k].name);
                 if (service.actions[k].name === actionReaction[i][j].split("|")[0]) {
                    field = service.actions[k].fields;
-                   console.log("field here :", field);
                  }
              }
         } else if (j === 1) {
@@ -164,14 +166,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         const s_name = service.name.charAt(0).toLowerCase() + service.name.slice(1);
         const apikey = await ApiKey.findOne({user_id: user.uid, service: s_name});
         if (!apikey) return next(new ErrorHandler("Api key not found", 404));
+        if (field == [])
+          continue;
         if (field[0].name == "webhook") {
-            console.log("webhook here :", actionReaction[i][j].split("|")[1]);
             apikey.webhook = actionReaction[i][j].split("|")[1];
         } else if (field[0].name == "channel") {
-          console.log("channel here :", actionReaction[i][j].split("|")[1]);
           apikey.channel = actionReaction[i][j].split("|")[1];
         }
-        console.log("apikey here :", apikey);
         await apikey.save();
         actionReaction[i][j] = actionReaction[i][j].split("|")[0];
       }
