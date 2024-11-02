@@ -30,48 +30,39 @@ export const discordMessageWebhook = async (message: any) => {
   return console.log("Message sent to Discord");
 };
 
-let lastMessageId: string | null = null;
-
 export const checkMessageChannel = async (message: any) => {
   const user = await ApiKey.findOne({ user_id: message, service: "discord" });
   if (!user) return null;
+
   const channel = user.channel;
-    if (!channel) return null;
+  if (!channel) return null;
+
   const url = `https://discord.com/api/v9/channels/${channel}/messages`;
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
         "Content-Type": "application/json",
       },
     });
+
     if (!response.ok) {
       console.error("Failed to fetch messages from Discord channel");
       return null;
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => (lastMessageId === null) ? true : msg.id > lastMessageId);
 
-    if (newMessages.length === 0) {
-      console.log("No new messages in the channel.");
+    const lastMessage = discordMessages[0];
+    if (!lastMessage) {
       return null;
     }
-    if (lastMessageId === null) {
-      lastMessageId = discordMessages[newMessages.length - 1].id;
-      return null;
-    }
-
-    lastMessageId = newMessages[newMessages.length - 1].id;
-    const writersAndContents = newMessages
-        .map((msg: any) => `Writer: ${msg.author.username}, Content: ${msg.content}`)
-        .join(" \n ");
-    let messages = {
+    const writersAndContents = `Writer: ${lastMessage.author.username}, Content: ${lastMessage.content}`;
+    const messages = {
       user_uid: message,
       data: writersAndContents,
     };
-    console.log("New messages from Discord channel:", messages);
     return messages;
   } catch (error) {
     console.error("Error while fetching messages:", error);

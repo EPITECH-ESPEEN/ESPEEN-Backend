@@ -29,7 +29,7 @@ export class TwitchApi implements API {
         if (!this.RouteMap.has(routes)) return null;
         const route = this.RouteMap.get(name);
         if (route === undefined) return null;
-        return await route(user_uid);
+        return await route(params);
     }
 }
 
@@ -63,10 +63,11 @@ export async function getUserIdFromAccessToken(accessToken: string): Promise<str
 
 //TO CHECK : if it's correct to retrieve accessToken like this (same logic for all reactions)
 //TODO : Description should be dynamic `export async function updateTwitchUserDescription(user_id: string, descriptionUpdated: string) {`
-export async function updateTwitchUserDescription(user_id: string) {
-        const tokens = await ApiKey.findOne({user_id: user_id, service: "twitch"});
+export async function updateTwitchUserDescription(message: any) {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user :", user_id);
+        console.error("No Twitch tokens found for user :", message.user_uid);
         return null;
     }
 
@@ -74,7 +75,7 @@ export async function updateTwitchUserDescription(user_id: string) {
     
     // if (descriptionUpdated === "")
     //     return null;
-    let descriptionUpdated = "New description";
+    let descriptionUpdated = message.data;
 
     let url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
     const config = {
