@@ -72,9 +72,6 @@ export async function updateTwitchUserDescription(message: any) {
     }
 
     let accessToken = tokens.api_key;
-    
-    // if (descriptionUpdated === "")
-    //     return null;
     let descriptionUpdated = message.data;
 
     let url = `https://api.twitch.tv/helix/users?description=${encodeURIComponent(descriptionUpdated)}`;
@@ -97,10 +94,11 @@ export async function updateTwitchUserDescription(message: any) {
 
 //TO CHECK : Requires a user access token that includes the moderation:read or moderator:manage:banned_users scope.
 //TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
-export async function getTwitchBannedUser(user_id: string) {
-    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+export async function getTwitchBannedUser(message: any) {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user :", user_id);
+        console.error("No Twitch tokens found for user :", uid);
         return null;
     }
 
@@ -108,7 +106,7 @@ export async function getTwitchBannedUser(user_id: string) {
     //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
-        console.error("No broadcaster_id found for user :", user_id);
+        console.error("No broadcaster_id found for user :", uid);
         return null;
     }
     let url = `https://api.twitch.tv/helix/moderation/banned?broadcaster_id=${broadcaster_id}`;
@@ -132,10 +130,11 @@ export async function getTwitchBannedUser(user_id: string) {
 
 //TO CHECK : Requires a user access token that includes the moderation:read or moderator:manage:banned_users scope.
 //TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
-export async function getTwitchModerators(user_id: string) {
-    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+export async function getTwitchModerators(message: any) {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user:", user_id);
+        console.error("No Twitch tokens found for user:", uid);
         return null;
     }
 
@@ -143,7 +142,7 @@ export async function getTwitchModerators(user_id: string) {
     //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
-        console.error("No broadcaster_id found for user :", user_id);
+        console.error("No broadcaster_id found for user :", uid);
         return null;
     }
     let url = `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcaster_id}`;
@@ -167,10 +166,11 @@ export async function getTwitchModerators(user_id: string) {
 
 //INFO : This request no need moderated scope (broadcaster_id can be what we want)
 //TODO Handle dynamic broadcaster : add broadcaster_id in params (and update from field in frontend)
-export async function getTwitchChannelInfo(user_id: string): Promise<any | null> {
-    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+export async function getTwitchChannelInfo(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user:", user_id);
+        console.error("No Twitch tokens found for user:", uid);
         return null;
     }
 
@@ -178,7 +178,7 @@ export async function getTwitchChannelInfo(user_id: string): Promise<any | null>
     //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
-        console.error("No broadcaster_id found for user :", user_id);
+        console.error("No broadcaster_id found for user :", uid);
         return null;
     }
     let url = `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcaster_id}`;
@@ -208,10 +208,11 @@ export async function getTwitchChannelInfo(user_id: string): Promise<any | null>
 }
 
 //INFO : This request no need moderated scope (broadcaster_id can be what we want)
-export async function getTwitchUserClips(user_id: string): Promise<any | null> {
-    const tokens = await ApiKey.findOne({ user_id: user_id, service: "twitch" });
+export async function getTwitchUserClips(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
-        console.error("No Twitch tokens found for user:", user_id);
+        console.error("No Twitch tokens found for user:", uid);
         return null;
     }
 
@@ -219,7 +220,7 @@ export async function getTwitchUserClips(user_id: string): Promise<any | null> {
     //TODO " broadcaster_id should be dynamic
     const broadcaster_id = await getUserIdFromAccessToken(accessToken);
     if (!broadcaster_id) {
-        console.error("No broadcaster_id found for user :", user_id);
+        console.error("No broadcaster_id found for user :", uid);
         return null;
     }
     let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}`;
