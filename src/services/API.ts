@@ -14,6 +14,7 @@ import { API } from "../utils/interfaces";
 import { MeteoApi } from "./weatherServices";
 import { GoogleApi, isAuthToGoogle } from "./googleServices";
 import { DiscordApi } from "./discordServices";
+import { TwitchApi } from "./twitchServices";
 import { YoutubeApi } from "./youtubeServices";
 import apiKeyModels from "../models/apiKeyModels";
 import User from "../models/userModel";
@@ -24,6 +25,7 @@ export class APIRouter implements API {
     ["google", new GoogleApi()],
     ["meteo", new MeteoApi()],
     ["discord", new DiscordApi()],
+    ["twitch", new TwitchApi()],
     ["youtube", new YoutubeApi()],
     ["github", new GithubRoutes()]
   ]);
@@ -42,28 +44,29 @@ export function serviceRouter() {
   setInterval(async () => {
     const users = await User.find({});
     for (let i = 0; i < users.length; i++) {
-      let user_services: string[][] | undefined = users[i].actionReaction;
+      let user_services: { [key: string]: string } | undefined = users[i].actionReaction;
       if (user_services === undefined) {
-        continue;
-      } else if (user_services.length === 0) {
-        continue;
+        break;
       }
       const user_routes = user_services[0];
-      for (let user_service of user_routes) {
-        switch (user_service.split(".")[0]) {
+      for (let user_service in user_routes) {
+        switch (user_routes[user_service].split(".")[0]) {
           case "google":
             if (!(await isAuthToGoogle(users[i].uid))) {
-              continue;
+              return;
             }
             break;
           case "meteo":
           case "discord":
+          case "twitch":
           case "facebook":
           case "github":
+          case "youtube":
             break;
           default:
             return;
         }
+
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 

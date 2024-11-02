@@ -4,6 +4,7 @@ import errorMiddleware from "./middlewares/errors";
 import cookieParser from "cookie-parser";
 import aboutJSON from "./routes/aboutJSON";
 import cors from "cors";
+import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import githubRouter from "./services/githubService"
@@ -12,8 +13,10 @@ import serviceRoutes from "./routes/serviceRoutes";
 import googleRouter from "./services/googleServices";
 import actionReactionRoutes from "./routes/actionReactionRoutes";
 import discordRouter from "./services/discordServices";
+import twitchRouter from "./services/twitchServices";
 import { serviceRouter } from "./services/API";
 
+dotenv.config();
 const app = express();
 
 const corsOptions = {
@@ -40,6 +43,7 @@ app.use("/api", userRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", googleRouter);
 app.use("/api", discordRouter);
+app.use("/api", twitchRouter);
 app.use("/api", githubRouter);
 app.use("/api", actionReactionRoutes);
 app.use(aboutJSON);

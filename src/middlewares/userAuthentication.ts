@@ -13,7 +13,7 @@ interface AuthenticatedRequest extends Request {
 export const isAuthenticatedUser = async (req: Request, res: Response, next: NextFunction) => {
   const token = getFormattedToken(req);
   if (!token) return next(new ErrorHandler("User token not found", 404));
-  const user = User.findOne({ token });
+  const user = User.findOne({ user_token: token });
   if (!user) {
     return next(new ErrorHandler("Invalid token. Please login again", 401));
   }

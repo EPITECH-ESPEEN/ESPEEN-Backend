@@ -13,10 +13,10 @@ export const discordMessageWebhook = async (message: any) => {
   if (message === undefined) return null;
   const uid: number = message.user_uid;
   const users = await ApiKey.findOne({ user_id: uid, service: "discord" });
-  if (!users) return null;
+  if (!users) return message;
   const webhook = users.webhook;
-  if (!webhook) return null;
-
+  if (!webhook) return message;
+  console.log("Webhook found:", webhook);
   const response = await fetch(webhook, {
     method: "POST",
     headers: {
@@ -24,55 +24,48 @@ export const discordMessageWebhook = async (message: any) => {
     },
     body: JSON.stringify({ content: message.data }),
   });
+  console.log("Response:", response);
   if (!response.ok) {
-    return console.log("Error while sending message to Discord");
+    console.log("Error while sending message to Discord");
+    return message;
   }
-  return console.log("Message sent to Discord");
+  console.log("Message sent to Discord");
+  return message;
 };
 
-let lastMessageId: string | null = null;
-
 export const checkMessageChannel = async (message: any) => {
-  if (message === undefined) return
   const user = await ApiKey.findOne({ user_id: message, service: "discord" });
   if (!user) return null;
+
   const channel = user.channel;
-    if (!channel) return null;
+  if (!channel) return null;
+
   const url = `https://discord.com/api/v9/channels/${channel}/messages`;
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
         "Content-Type": "application/json",
       },
     });
+
     if (!response.ok) {
-      console.error("Failed to fetch messages from Discord channel");
+      console.error(`Failed to fetch messages from Discord channel: ${channel}`);
       return null;
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => (lastMessageId === null) ? true : msg.id > lastMessageId);
 
-    if (newMessages.length === 0) {
-      console.log("No new messages in the channel.");
+    const lastMessage = discordMessages[0];
+    if (!lastMessage) {
       return null;
     }
-    if (lastMessageId === null) {
-      lastMessageId = discordMessages[newMessages.length - 1].id;
-      return null;
-    }
-
-    lastMessageId = newMessages[newMessages.length - 1].id;
-    const writersAndContents = newMessages
-        .map((msg: any) => `Writer: ${msg.author.username}, Content: ${msg.content}`)
-        .join(" \n ");
-    let messages = {
+    const writersAndContents = `Writer: ${lastMessage.author.username}, Content: ${lastMessage.content}`;
+    const messages = {
       user_uid: message,
       data: writersAndContents,
     };
-    console.log("New messages from Discord channel:", messages);
     return messages;
   } catch (error) {
     console.error("Error while fetching messages:", error);
@@ -92,7 +85,6 @@ export class DiscordWebhookApi implements API {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
-    if (name === "send") return await route(params);
     if (params) return await route(params);
     return await route();
   }
@@ -108,7 +100,7 @@ export class DiscordBotApi implements API {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
-    if (name === "recep") return await route(user_uid);
+    if (name === "receive_message") return await route(user_uid);
     if (params) return await route(params);
     return await route();
   }
@@ -173,11 +165,6 @@ discordRouter.get("/discord/auth", (req, res) => {
   passport.authenticate("discord")(req, res);
 });
 
-interface DiscordUser {
-    accessToken: string;
-    refreshToken: string;
-}
-
 discordRouter.get("/discord/callback", passport.authenticate("discord", {
       failureRedirect: "/login",
       session: true,
@@ -204,7 +191,7 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
           if (tokens.refreshToken) {
             await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
           } else await createAndUpdateApiKey(tokens.accessToken, "", user_uid, "discord");
-          return res.status(200).send("Google account linked, come back to the app");
+          return res.status(200).send("Discord account linked, come back to the app");
         } else {
           console.error("Access token or refresh token is missing");
           return res.status(500).send("Internal Server Error");

@@ -55,12 +55,12 @@ export async function sendEmails(message: any) {
 
     if (!tokens || !tokens.api_key) {
         console.error("No tokens found for user:", message.user_uid);
-        return null;
+        return message;
     }
 
     if (!email_u) {
         console.error("No email found for user:", message.user_uid);
-        return null;
+        return message;
     }
 
     const email = `To: ${email_u}\r\n` + "Subject: EPSEEN Reaction\r\n\r\n" + `${message.data}`;
@@ -84,7 +84,7 @@ export async function sendEmails(message: any) {
     } catch (error: any) {
         console.error("Erreur lors de l'envoi de l'email :", error.response ? error.response.data : error.message);
     }
-    return true;
+    return message;
 }
 
 export class GmailRoutes implements API {

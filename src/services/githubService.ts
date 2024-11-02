@@ -12,7 +12,6 @@
 
 import express, {Request, Response} from "express";
 import axios from "axios";
-import dotenv from "dotenv";
 import User from "../models/userModel";
 import {API} from "../utils/interfaces";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
@@ -25,7 +24,6 @@ const redirectUri = "http://localhost:8080/api/github/callback";
 let previousPushesID: { uid: string, push_id: string }[] = [];
 
 const githubRouter = express.Router();
-dotenv.config();
 
 function isAlreadyInArray(id: any, push_id: any) {
     for (let i = 0; i < previousPushesID.length; i++) {
