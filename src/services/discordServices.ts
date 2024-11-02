@@ -16,7 +16,7 @@ export const discordMessageWebhook = async (message: any) => {
   if (!users) return message;
   const webhook = users.webhook;
   if (!webhook) return message;
-
+  console.log("Webhook found:", webhook);
   const response = await fetch(webhook, {
     method: "POST",
     headers: {
@@ -24,6 +24,7 @@ export const discordMessageWebhook = async (message: any) => {
     },
     body: JSON.stringify({ content: message.data }),
   });
+  console.log("Response:", response);
   if (!response.ok) {
     console.log("Error while sending message to Discord");
     return message;

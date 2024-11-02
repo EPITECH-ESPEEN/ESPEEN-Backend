@@ -84,5 +84,5 @@ export function serviceRouter() {
         }
       }
     }
-  }, 5000);
+  }, 20000);
 }

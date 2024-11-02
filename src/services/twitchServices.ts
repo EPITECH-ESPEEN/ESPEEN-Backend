@@ -74,7 +74,7 @@ export async function updateTwitchUserDescription(message: any) {
     const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user :", message.user_uid);
-        return null;
+        return message;
     }
 
     let accessToken = tokens.api_key;
@@ -92,10 +92,14 @@ export async function updateTwitchUserDescription(message: any) {
     try {
         const response = await axios.put(url, {}, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch Reaction | Update user description data res : ${response.data}`);
-        return response.data;
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
     } catch (error) {
         console.error("Error when update Twitch user description :", error);
-        return null;
+        return message;
     }
 }
 
@@ -105,14 +109,14 @@ export async function getTwitchBannedUser(message: any) {
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user :", uid);
-        return null;
+        return message;
     }
     
     let accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
-        return null;
+        return message;
     }
     let url = `https://api.twitch.tv/helix/moderation/banned?broadcaster_id=${broadcaster_id}`;
 
@@ -126,10 +130,14 @@ export async function getTwitchBannedUser(message: any) {
     try {
         const response = await axios.get(url, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Banned users data: ${JSON.stringify(response.data)}`);
-        return response.data;
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
     } catch (error) {
         console.error("Error fetching banned users from Twitch:", error);
-        return null;
+        return message;
     }
 }
 
@@ -145,7 +153,7 @@ export async function getTwitchModerators(message: any) {
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
-        return null;
+        return message;
     }
     let url = `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcaster_id}`;
 
@@ -159,10 +167,14 @@ export async function getTwitchModerators(message: any) {
     try {
         const response = await axios.get(url, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Moderators data: ${JSON.stringify(response.data)}`);
-        return response.data;
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
     } catch (error) {
         console.error("Error fetching moderators from Twitch:", error);
-        return null;
+        return message;
     }
 }
 
@@ -172,14 +184,14 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user:", uid);
-        return null;
+        return message;
     }
 
     const accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
-        return null;
+        return message;
     }
     let url = `https://api.twitch.tv/helix/channels?broadcaster_id=${broadcaster_id}`;
     
@@ -196,14 +208,18 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
         const channelData = responseData.data[0];
         if (channelData) {
             console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Twitch channel information retrieved: ${JSON.stringify(channelData)}`);
-            return channelData;
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(response.data),
+            };
+            return ret;
         } else {
             console.error("Twitch channel data not found in response");
-            return null;
+            return message;
         }
     } catch (error) {
         console.error("Error fetching channel information from Twitch:", error);
-        return null;
+        return message;
     }
 }
 
@@ -213,14 +229,14 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user:", uid);
-        return null;
+        return message;
     }
 
     const accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
-        return null;
+        return message;
     }
     let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}&first=${first}`;
 
@@ -234,10 +250,14 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
     try {
         const response = await axios.get(url, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Clips data retrieved: ${JSON.stringify(response.data)}`);
-        return response.data;
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
     } catch (error) {
         console.error("Error fetching clips from Twitch:", error);
-        return null;
+        return message;
     }
 }
 
@@ -247,7 +267,7 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
     if (!tokens || !tokens.api_key) {
         console.error("No Twitch tokens found for user:", uid);
-        return null;
+        return message;
     }
 
     const accessToken = tokens.api_key;
@@ -263,10 +283,14 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
     try {
         const response = await axios.get(url, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Top games data retrieved: ${JSON.stringify(response.data)}`);
-        return response.data;
+        const ret = {
+            user_uid: message.user_uid,
+            data: JSON.stringify(response.data),
+        };
+        return ret;
     } catch (error) {
         console.error("Error fetching top games from Twitch:", error);
-        return null;
+        return message;
     }
 }
 

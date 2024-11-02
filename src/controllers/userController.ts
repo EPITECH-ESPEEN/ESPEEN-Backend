@@ -101,14 +101,14 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
                     }
                 }
             }
-        } else if (j === 1) {
+        } else {
             for (let k = 0; k < service.reactions.length; k++) {
                 if (service.reactions[k].name === actionReaction[i][j]) {
                   field = service.reactions[k].fields;
                   if (field.length === 0) break;
                   if (apikey.webhook && field[0].name === "webhook") {
                     actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
-                  } else if (apikey.channel && field[0].name === "channel") {
+                  } if (apikey.channel && field[0].name === "channel") {
                     actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
                   }
                 }
@@ -139,7 +139,6 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const {username, email, actionReaction} = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
-    console.log("actionReaction here :", actionReaction);
 
     for (let i = 0; i < actionReaction.length; i++) {
       for (let j = 0; j < actionReaction[i].length; j++) {
@@ -147,14 +146,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         part = part.charAt(0).toUpperCase() + part.slice(1);
         const service = await Service.findOne({name: part});
         if (!service) return next(new ErrorHandler("Service not found", 404));
-      let field = [{name: "none", type: "text"}];
+        let field = [{name: "none", type: "text"}];
         if (j === 0) {
              for (let k = 0; k < service.actions.length; k++) {
                 if (service.actions[k].name === actionReaction[i][j].split("|")[0]) {
                    field = service.actions[k].fields;
                  }
              }
-        } else if (j === 1) {
+        } else {
             for (let k = 0; k < service.reactions.length; k++) {
                 if (service.reactions[k].name === actionReaction[i][j].split("|")[0]) {
                   field = service.reactions[k].fields;
@@ -169,7 +168,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         }
         if (field[0].name == "webhook") {
             apikey.webhook = actionReaction[i][j].split("|")[1];
-        } else if (field[0].name == "channel") {
+        } if (field[0].name == "channel") {
           apikey.channel = actionReaction[i][j].split("|")[1];
         }
         await apikey.save();
