@@ -65,6 +65,7 @@ export const getUserServices = async (req: Request, res: Response, next: NextFun
     const key = await ApiKey.find({ user_id: user?.uid });
     if (!user) return next(new ErrorHandler("User services not found", 404));
     const services = key.map((service) => service.service);
+    console.log(services);
     return res.status(200).json({ services });
   } catch (error) {
     console.error("Error in /api/user/services route:", error);
@@ -96,8 +97,12 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
                     if (field.length === 0) break;
                     if (apikey.webhook && field[0].name === "webhook") {
                       actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
-                    } else if (apikey.channel && field[0].name === "channel") {
+                    }
+                    if (apikey.channel && field[0].name === "channel") {
                       actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+                    }
+                    if (apikey.city && field[0].name === "city") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.city;
                     }
                 }
             }
@@ -106,11 +111,15 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
                 if (service.reactions[k].name === actionReaction[i][j]) {
                   field = service.reactions[k].fields;
                   if (field.length === 0) break;
-                  if (apikey.webhook && field[0].name === "webhook") {
-                    actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
-                  } if (apikey.channel && field[0].name === "channel") {
-                    actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
-                  }
+                    if (apikey.webhook && field[0].name === "webhook") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.webhook;
+                    }
+                    if (apikey.channel && field[0].name === "channel") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.channel;
+                    }
+                    if (apikey.city && field[0].name === "city") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.city;
+                    }
                 }
             }
         }
@@ -169,7 +178,9 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         if (field[0].name == "webhook") {
             apikey.webhook = actionReaction[i][j].split("|")[1];
         } if (field[0].name == "channel") {
-          apikey.channel = actionReaction[i][j].split("|")[1];
+            apikey.channel = actionReaction[i][j].split("|")[1];
+        } if (field[0].name == "city") {
+            apikey.city = actionReaction[i][j].split("|")[1];
         }
         await apikey.save();
         actionReaction[i][j] = actionReaction[i][j].split("|")[0];

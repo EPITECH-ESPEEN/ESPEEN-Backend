@@ -4,6 +4,7 @@ import User, { UserRole } from "../models/userModel";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Service from "../models/serviceModel";
+import ApiKey from "../models/apiKeyModels";
 
 interface RegisterUserBody {
   username: string;
@@ -42,6 +43,14 @@ export const registerUser = async (req: Request<{}, {}, RegisterUserBody>, res: 
       user_token: token,
     };
     await User.create(formattedData);
+    const newMeteo = {
+        user_id: newId,
+        api_key: "none",
+        refresh_token: "none",
+        service: "meteo",
+        city: "none",
+    };
+    await ApiKey.create(newMeteo);
     return res.status(200).json({ access_token: token });
   } catch (error) {
     console.error("Error in /api/login route:", error);
