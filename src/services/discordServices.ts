@@ -33,7 +33,6 @@ export const discordMessageWebhook = async (message: any) => {
 let lastMessageId: string | null = null;
 
 export const checkMessageChannel = async (message: any) => {
-  if (message === undefined) return
   const user = await ApiKey.findOne({ user_id: message, service: "discord" });
   if (!user) return null;
   const channel = user.channel;
@@ -92,7 +91,6 @@ export class DiscordWebhookApi implements API {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
-    if (name === "send") return await route(params);
     if (params) return await route(params);
     return await route();
   }
@@ -108,7 +106,7 @@ export class DiscordBotApi implements API {
     if (!this.RouteMap.has(routes)) return null;
     const route = this.RouteMap.get(name);
     if (route === undefined) return null;
-    if (name === "recep") return await route(user_uid);
+    if (name === "receive_message") return await route(user_uid);
     if (params) return await route(params);
     return await route();
   }

@@ -46,7 +46,7 @@ export function serviceRouter() {
     for (let i = 0; i < users.length; i++) {
       let user_services: { [key: string]: string } | undefined = users[i].actionReaction;
       if (user_services === undefined) {
-        return;
+        break;
       }
       const user_routes = user_services[0];
       for (let user_service in user_routes) {
@@ -61,10 +61,12 @@ export function serviceRouter() {
           case "twitch":
           case "facebook":
           case "github":
-              break;
+          case "youtube":
+            break;
           default:
             return;
         }
+
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 
@@ -82,5 +84,5 @@ export function serviceRouter() {
         }
       }
     }
-  }, 20000);
+  }, 5000);
 }
