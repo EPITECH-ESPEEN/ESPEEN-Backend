@@ -7,7 +7,6 @@ import passport from "passport";
 import User from "../models/userModel";
 import ApiKey from "../models/apiKeyModels";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
-import {isAuthenticatedUser} from "../middlewares/userAuthentication";
 import {getFormattedToken} from "../utils/token";
 
 export const discordMessageWebhook = async (message: any) => {
@@ -54,7 +53,7 @@ export const checkMessageChannel = async (message: any) => {
     }
 
     const discordMessages = await response.json();
-    const newMessages = discordMessages.filter((msg: any) => msg.id > lastMessageId);
+    const newMessages = discordMessages.filter((msg: any) => (lastMessageId === null) ? true : msg.id > lastMessageId);
 
     if (newMessages.length === 0) {
       console.log("No new messages in the channel.");
@@ -179,9 +178,8 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
       session: true,
     }),
     async (req, res) => {
-      const tokens = req.user;
+      const tokens: DiscordUser = req.user as DiscordUser;
 
-      console.log("Access token:", tokens);
       if (!tokens) {
         return res.status(500).send("Internal Server Error");
       }
@@ -197,12 +195,11 @@ discordRouter.get("/discord/callback", passport.authenticate("discord", {
           return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
-        res.redirect(`${process.env.FRONT_URL}/services`);
         if (tokens.accessToken) {
           if (tokens.refreshToken) {
             await createAndUpdateApiKey(tokens.accessToken, tokens.refreshToken, user_uid, "discord");
           } else await createAndUpdateApiKey(tokens.accessToken, "", user_uid, "discord");
-          return;
+          return res.status(200).send("Google account linked, come back to the app");
         } else {
           console.error("Access token or refresh token is missing");
           return res.status(500).send("Internal Server Error");
@@ -249,8 +246,7 @@ discordRouter.get("/discord/logout", async (req, res) => {
     if (!userToken) {
       return res.status(401).json({error: "Unauthorized"});
     }
-    res.redirect(`${process.env.FRONT_URL}/services`);
-    // return res.status(200).json({message: "User deleted successfully"});
+    return res.status(200).json({message: "User deleted successfully"});
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);
     return res.status(500).json({error: "Failed to process user"});

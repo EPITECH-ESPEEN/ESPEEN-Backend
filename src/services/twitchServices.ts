@@ -348,7 +348,6 @@ twitchRouter.get('/twitch/callback', passport.authenticate('twitch', {
         }
         
         const userAuthentifiedUid = userAuthentified.uid;
-        res.redirect(`${process.env.FRONT_URL}/services`);
 
         if (accessToken) {
             if (refreshToken) {
@@ -356,7 +355,7 @@ twitchRouter.get('/twitch/callback', passport.authenticate('twitch', {
             } else {
                 await createAndUpdateApiKey(accessToken, "", userAuthentifiedUid, "twitch");
             }
-            return;
+            return res.status(200).send("Google account linked, come back to the app");
         } else {
             console.error("Access token or refresh token is missing");
             return res.status(500).send("Internal Server Error");
