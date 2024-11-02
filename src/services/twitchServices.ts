@@ -44,10 +44,12 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
         return null;
     }
 
+    const accessToken = tokens.api_key;
+
     let url = "https://api.twitch.tv/helix/users";
     const config = {
         headers: {
-            Authorization: `Bearer ${tokens.api_key}`,
+            Authorization: `Bearer ${accessToken}`,
             "Client-ID": process.env.TWITCH_CLIENT_ID,
         },
     };
@@ -68,9 +70,7 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
     }
 }
 
-//TO CHECK: If don't work try with description in body req:
-// const response = await axios.put(url, { description: descriptionUpdated }, config)
-// and delete `?description=${descriptionUpdated}` from url
+
 export async function updateTwitchUserDescription(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({user_id: uid, service: "twitch"});
@@ -109,9 +109,9 @@ export async function getTwitchBannedUser(message: any) {
         console.error("No Twitch tokens found for user :", uid);
         return null;
     }
-
+    
     let accessToken = tokens.api_key;
-    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
         return null;
@@ -144,7 +144,7 @@ export async function getTwitchModerators(message: any) {
     }
 
     const accessToken = tokens.api_key;
-    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
         return null;
@@ -178,7 +178,7 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     }
 
     const accessToken = tokens.api_key;
-    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
         return null;
@@ -197,7 +197,7 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
         const responseData = response.data as { data: any[] };
         const channelData = responseData.data[0];
         if (channelData) {
-            console.log(`Twitch channel information retrieved: ${JSON.stringify(channelData)}`);
+            console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Twitch channel information retrieved: ${JSON.stringify(channelData)}`);
             return channelData;
         } else {
             console.error("Twitch channel data not found in response");
@@ -209,7 +209,6 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     }
 }
 
-//INFO : This request no need moderated scope (broadcaster_id can be what we want)
 //INFO : "first" parameter is optional (is the maximum number of items to return)
 export async function getTwitchUserClips(message: any, first: number = 5): Promise<any | null> {
     const uid: number = message.user_uid;
@@ -220,12 +219,12 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
     }
 
     const accessToken = tokens.api_key;
-    const broadcaster_id = await getUserIdFromAccessToken(accessToken);
+    const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
         return null;
     }
-    let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}?first=${first}`;
+    let url = `https://api.twitch.tv/helix/clips?broadcaster_id=${broadcaster_id}&first=${first}`;
 
     const config = {
         headers: {
@@ -236,7 +235,7 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
 
     try {
         const response = await axios.get(url, config);
-        console.log(`Twitch clips data retrieved: ${JSON.stringify(response.data)}`);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Clips data retrieved: ${JSON.stringify(response.data)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching clips from Twitch:", error);
@@ -265,7 +264,7 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
 
     try {
         const response = await axios.get(url, config);
-        console.log(`Top games data retrieved: ${JSON.stringify(response.data)}`);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Top games data retrieved: ${JSON.stringify(response.data)}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching top games from Twitch:", error);

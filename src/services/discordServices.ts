@@ -50,7 +50,7 @@ export const checkMessageChannel = async (message: any) => {
     });
 
     if (!response.ok) {
-      console.error("Failed to fetch messages from Discord channel");
+      console.error(`Failed to fetch messages from Discord channel: ${channel}`);
       return null;
     }
 
