@@ -105,6 +105,9 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
                     if (apikey.city && field[0].name === "city") {
                         actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.city;
                     }
+                    if (apikey.description && field[0].name === "description") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.description;
+                    }
                 }
             }
         } else {
@@ -120,6 +123,9 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
                     }
                     if (apikey.city && field[0].name === "city") {
                         actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.city;
+                    }
+                    if (apikey.description && field[0].name === "description") {
+                        actionReaction[i][j] = actionReaction[i][j] + "|" + apikey.description;
                     }
                 }
             }
@@ -183,6 +189,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             apikey.channel = actionReaction[i][j].split("|")[1];
         } if (field[0].name == "city") {
             apikey.city = actionReaction[i][j].split("|")[1];
+        } if (field[0].name == "description") {
+            apikey.description = actionReaction[i][j].split("|")[1];
         }
         await apikey.save();
         actionReaction[i][j] = actionReaction[i][j].split("|")[0];
