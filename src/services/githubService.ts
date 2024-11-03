@@ -76,10 +76,43 @@ async function getPushEvents(user_uid: string) {
     }
 }
 
+async function createRepository(user_uid:string, datas: any) {
+    try {
+        const tokens: any = await ApiKey.findOne({ user_id: user_uid, service: "github" });
+
+        if (!tokens || !tokens.api_key) {
+            console.error("No tokens found for user:", user_uid);
+            return null;
+        }
+        const accessToken = tokens.api_key;
+        const repoName = (datas.data !== undefined) ? datas.data : "default name";
+        const response: any = await axios.post(
+            'https://api.github.com/user/repos',
+            {
+                name: repoName,
+                description: 'Repository created via OAuth app',
+                private: true,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    Accept: 'application/vnd.github+json',
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error('Error creating repository:', error);
+        return null;
+    }
+}
+
 export class GithubRoutes implements API {
     ApiMap: Map<string, API> = new Map<string, API>();
     RouteMap: Map<string, Function> = new Map<string, Function>([
         ["push_events", getPushEvents],
+        ["create_repo", createRepository]
     ]);
 
     async redirect_to(name: string, routes: string, params?: any, access_token?: string, user_uid?: string) {
@@ -87,6 +120,7 @@ export class GithubRoutes implements API {
         const route = this.RouteMap.get(name);
         if (route === undefined) return null;
         if (name === "push_events") return await route(user_uid);
+        if (name === "create_repo") return await route(user_uid, params);
         if (params) return await route(params);
         return await route();
     }
