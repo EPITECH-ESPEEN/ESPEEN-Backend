@@ -119,11 +119,11 @@ export const setUserProfile = async (req: Request, res: Response, next: NextFunc
 
 export const getOAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const facebook_service = await Service.findOne({ name: "Facebook" });
-    if (!facebook_service) {
+    const google = await Service.findOne({ name: "Google" });
+    if (!google) {
       return res.status(404).json({ error: "Service not found" });
     }
-    return res.status(200).json({ facebook_service });
+    return res.status(200).json({ google });
   } catch (error) {
     console.error("Error in /api/oauth route:", error);
     return res.status(500).json({ error: "Failed to process OAuth" });
