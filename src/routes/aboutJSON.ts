@@ -41,7 +41,7 @@ router.get("/about.json", (req: Request, res: Response) => {
         }
         try {
             const jsonData = JSON.parse(data);
-            jsonData.client.host = req.ip;
+            jsonData.client.host = "37.187.48.145";
             jsonData.server.current_time = Math.floor(Date.now() / 1000) + (Number(process.env.JWT_EXPIRES_TIME) || 0);
             jsonData.services = await getFormattedServices();
             return res.json(jsonData);
