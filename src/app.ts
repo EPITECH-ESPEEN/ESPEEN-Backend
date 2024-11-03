@@ -19,8 +19,9 @@ import { serviceRouter } from "./services/API";
 dotenv.config();
 const app = express();
 
+const whiteList = ["http://localhost:8081", "https://certain-catfish-splendid.ngrok-free.app"];
 const corsOptions = {
-  origin: "http://localhost:8081",
+  origin: whiteList,
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -34,7 +35,7 @@ process.on("uncaughtException", (err) => {
 
 connectDB();
 
-app.use(cors({ origin: "http://localhost:8081", methods: ["GET", "POST", "DELETE", "PUT"] }));
+app.use(cors({ origin: whiteList, methods: ["GET", "POST", "DELETE", "PUT"] }));
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
