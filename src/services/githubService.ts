@@ -21,7 +21,7 @@ import {getFormattedToken} from "../utils/token";
 
 const clientId = process.env.GITHUB_CLIENT_ID!;
 const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
-const redirectUri = "http://localhost:8080/api/github/callback";
+const redirectUri = process.env.GITHUB_CALLBACK_URL!;
 let previousPushesID: { uid: string, push_id: string }[] = [];
 
 const githubRouter = express.Router();
