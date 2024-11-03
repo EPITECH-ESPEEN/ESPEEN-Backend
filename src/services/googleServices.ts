@@ -245,8 +245,9 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
 googleRouter.get("/google/logout", async (req, res) => {
     try {
         const authHeader = getFormattedToken(req);
-        const userToken = await ApiKey.deleteOne({user_token: authHeader, service: "google"});
-        if (!userToken) {
+        const googleToken = await ApiKey.findOneAndDelete({user_token: authHeader, service: "google"});
+        const youtubeToken = await ApiKey.findOneAndDelete({user_token: authHeader, service: "youtube"});
+        if (!googleToken && !youtubeToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
         return res.status(200).send("Logged out of Google service, you can go back to Espeen");

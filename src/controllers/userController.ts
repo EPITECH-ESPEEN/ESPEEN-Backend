@@ -36,6 +36,7 @@ export const updateUserbyId = async (req: Request, res: Response, next: NextFunc
     const { username, email } = req.body;
     user.username = username || user.username;
     user.email = email || user.email;
+    user.role = req.body.role || user.role;
     await user.save();
     return res.status(200).json({ user });
   } catch (error) {
@@ -134,6 +135,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     const formattedUser = {
         uid: user.uid,
         username: user.username,
+        role: user.role,
         email: user.email,
         actionReaction: actionReaction,
     }

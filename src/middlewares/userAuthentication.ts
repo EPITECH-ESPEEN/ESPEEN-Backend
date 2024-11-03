@@ -11,14 +11,11 @@ interface AuthenticatedRequest extends Request {
 }
 
 export const isAuthenticatedUser = async (req: Request, res: Response, next: NextFunction) => {
-  const token = getFormattedToken(req);
-  if (!token) return next(new ErrorHandler("User token not found", 404));
-  const user = User.findOne({ user_token: token });
-  if (!user) {
-    return next(new ErrorHandler("Invalid token. Please login again", 401));
-  }
-
-  next();
+    const token = getFormattedToken(req);
+    if (!token) return next(new ErrorHandler("User token not found", 404));
+    const user = await User.findOne({ user_token: token });
+    if (!user) return next(new ErrorHandler("Invalid token. Please login again", 401));
+    next();
 };
 
 export const authorizeRoles = (...roles: UserRole[]) => {
@@ -29,3 +26,12 @@ export const authorizeRoles = (...roles: UserRole[]) => {
     next();
   };
 };
+
+export const isAuthenticatedAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    const token = getFormattedToken(req);
+    if (!token) return next(new ErrorHandler("User token not found", 404));
+    const user = await User.findOne({ user_token: token });
+    if (!user) return next(new ErrorHandler("Invalid token. Please login again", 401));
+    if (user.role !== "admin") return next(new ErrorHandler("You are not authorized to access this resource", 403));
+    next();
+  };
