@@ -249,7 +249,7 @@ googleRouter.get("/google/logout", async (req, res) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        return res.status(200).json({message: "User deleted successfully"});
+        return res.status(200).send("Logged out of Google service, you can go back to Espeen");
     } catch (error) {
         console.error("Error in /api/google/auth route:", error);
         return res.status(500).json({error: "Failed to process user"});

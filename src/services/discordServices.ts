@@ -235,7 +235,7 @@ discordRouter.get("/discord/logout", async (req, res) => {
     if (!userToken) {
       return res.status(401).json({error: "Unauthorized"});
     }
-    return res.status(200).json({message: "User logged out of Discord, you can go back to Espeen"});
+    return res.status(200).json({message: "Logged out of Discord, you can go back to Espeen"});
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);
     return res.status(500).json({error: "Failed to process user"});

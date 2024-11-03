@@ -153,7 +153,7 @@ githubRouter.get("/github/logout", async (req: Request, res: Response) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        return res.status(200).redirect("http://localhost:3000/services");
+        return res.status(200).send("Logged out of Github, you can go back to Espeen");
     } catch (error) {
         console.error("Error in /api/github/logout route:", error);
         return res.status(500).json({error: "Failed to process user"});

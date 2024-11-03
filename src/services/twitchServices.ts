@@ -93,7 +93,7 @@ export async function updateTwitchUserDescription(message: any) {
 
     try {
         const response = await axios.put(url, {}, config);
-        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Update user description data res : ${response.data}`);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Update user description data res : ${JSON.stringify(response.data)}`);
         const ret = {
             user_uid: message.user_uid,
             data: JSON.stringify(response.data),
@@ -104,8 +104,9 @@ export async function updateTwitchUserDescription(message: any) {
             console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
             accessToken = await refreshTwitchAccessToken(message);
             if (!accessToken) {
-                console.error(`Error refreshing Twitch access token for user: ${uid}`);
-                return message;
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid} with message : ${message}. User logged out of service.`);
+                return null;
             }
             config.headers.Authorization = `Bearer ${accessToken}`;
             const retryResponse = await axios.put(url, {}, config);
@@ -115,8 +116,8 @@ export async function updateTwitchUserDescription(message: any) {
             };
             return ret;
         } else {
-        console.error("Error when update Twitch user description :", error);
-        return message;
+        console.error(`Error when update Twitch user description : ${error}. `);
+        return null;
         }
     }
 }
@@ -153,9 +154,26 @@ export async function getTwitchBannedUser(message: any) {
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
-        console.error("Error fetching banned users from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching banned users from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -426,7 +444,7 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
         return ret;
     } catch (error) {
         console.error("Error send Twitch chat announcement:", error);
-        return message;
+        return null;
     }
 }
 
@@ -577,7 +595,7 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        return res.status(200).send("User deleted successfully");
+        return res.status(200).send("Logged out of Twitch, you can go back to Espeen");
     } catch (error) {
         console.error("Error in /api/twitch/logout route:", error);
         return res.status(500).json({error: "Failed to process user"});
