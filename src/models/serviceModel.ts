@@ -5,8 +5,8 @@ interface IService extends Document {
   name: string;
   icon: string;
   buttons?: { name: string; path: string }[];
-    actions: { action_id: string; name: string, fields: {name: string, type: string } }[];
-    reactions: { reaction_id: string; name: string, fields: {name: string, type: string } }[];
+    actions: { action_id: string; name: string, fields: {name: string, type: string }, description: string }[];
+    reactions: { reaction_id: string; name: string, fields: {name: string, type: string }, description: string }[];
 }
 
 const serviceSchema: Schema<IService> = new mongoose.Schema(
@@ -58,6 +58,10 @@ const serviceSchema: Schema<IService> = new mongoose.Schema(
                       },
                   },
               ],
+              description: {
+                  type: String,
+                  required: [true, "Action description is required"],
+              },
           },
       ],
       reactions: [
@@ -82,6 +86,10 @@ const serviceSchema: Schema<IService> = new mongoose.Schema(
                       },
                   },
               ],
+              description: {
+                  type: String,
+                  required: [true, "Reaction description is required"],
+              },
           },
       ],
   },

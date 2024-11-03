@@ -5,24 +5,6 @@
   "server": {
     "current_time": 1531680780,
     "services": [
-      {
-        "name": "google",
-        "actions": [
-          {
-            "name": "recep_mail",
-            "description": "The user receives an email"
-          }
-        ]
-      },
-      {
-        "name": "openweather",
-        "reactions": [
-          {
-            "name": "meteo",
-            "description": "The user receives the weather forecast"
-          }
-        ]
-      }
     ]
   }
 }
