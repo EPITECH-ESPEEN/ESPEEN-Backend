@@ -32,10 +32,10 @@ export const discordMessageWebhook = async (message: any) => {
 
 export const checkMessageChannel = async (message: any) => {
   const user = await ApiKey.findOne({ user_id: message, service: "discord" });
-  if (!user) return null;
+  if (!user) return message;
 
   const channel = user.channel;
-  if (!channel) return null;
+  if (!channel) return message;
 
   const url = `https://discord.com/api/v9/channels/${channel}/messages`;
   try {
@@ -49,14 +49,14 @@ export const checkMessageChannel = async (message: any) => {
 
     if (!response.ok) {
       console.error(`Failed to fetch messages from Discord channel: ${channel}`);
-      return null;
+      return message;
     }
 
     const discordMessages = await response.json();
 
     const lastMessage = discordMessages[0];
     if (!lastMessage) {
-      return null;
+      return message;
     }
     const writersAndContents = `Writer: ${lastMessage.author.username}, Content: ${lastMessage.content}`;
     const messages = {
@@ -66,7 +66,7 @@ export const checkMessageChannel = async (message: any) => {
     return messages;
   } catch (error) {
     console.error("Error while fetching messages:", error);
-    return null;
+    return message;
   }
 };
 
@@ -235,7 +235,7 @@ discordRouter.get("/discord/logout", async (req, res) => {
     if (!userToken) {
       return res.status(401).json({error: "Unauthorized"});
     }
-    return res.status(200).json({message: "User deleted successfully"});
+    return res.status(200).send("Logged out of Discord, you can go back to Espeen");
   } catch (error) {
     console.error("Error in /api/discord/logout route:", error);
     return res.status(500).json({error: "Failed to process user"});

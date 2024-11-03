@@ -48,25 +48,29 @@ export function serviceRouter() {
       if (user_services === undefined) {
         break;
       }
-      const user_routes = user_services[0];
-      for (let user_service in user_routes) {
-        switch (user_routes[user_service].split(".")[0]) {
-          case "google":
-            if (!(await isAuthToGoogle(users[i].uid))) {
-              return;
+      for (let user_service in user_services) {
+        for (let key in user_services[user_service]) {
+            switch (user_services[user_service][key].split(".")[0]) {
+                case "google":
+                if (!(await isAuthToGoogle(users[i].uid))) {
+                    return;
+                }
+                break;
+                case "meteo":
+                case "discord":
+                case "twitch":
+                case "facebook":
+                case "github":
+                case "youtube":
+                break;
+                default:
+                return;
             }
-            break;
-          case "meteo":
-          case "discord":
-          case "twitch":
-          case "facebook":
-          case "github":
-          case "youtube":
-            break;
-          default:
-            return;
         }
-
+      }
+        for (let user_service in user_services) {
+            const user_routes = user_services[user_service];
+            console.log(user_routes);
         let results: any | undefined = undefined;
         let access_token: string | undefined = undefined;
 
