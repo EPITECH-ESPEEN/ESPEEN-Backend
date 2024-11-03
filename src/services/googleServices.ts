@@ -206,12 +206,12 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
     if (code) {
         const { tokens } = await oauth2Client.getToken(code as string);
         oauth2Client.setCredentials(tokens);
-
         const authHeader = req.cookies.authToken;
         if (!authHeader) {
             const token = req.body.token;
 
             try {
+                // Verify the incoming Google token
                 const ticket = await oauth2Client.verifyIdToken({
                     idToken: token,
                     audience: process.env.CLIENT_ID,
@@ -219,24 +219,34 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
                 const payload = ticket.getPayload();
                 const googleUserId = payload?.sub;
 
+                // Fetch all tokens associated with Google
                 const db_tokens = await ApiKey.find({ service: "Google" });
 
-                for (let i = 0; i < db_tokens.length; i++) {
-                    const storedTicket = await oauth2Client.verifyIdToken({
-                        idToken: db_tokens[i].api_key,
-                        audience: process.env.CLIENT_ID,
-                    });
-                    const storedPayload = storedTicket.getPayload();
-                    const storedUserId = storedPayload?.sub;
-                    if (storedUserId === googleUserId) {
-                        const user = await User.findOne({ uid: db_tokens[i].user_id });
+                // Helper function to get Google user ID from a stored token
+                async function getGoogleUserIdFromToken(apiKey: any) {
+                    try {
+                        const storedTicket = await oauth2Client.verifyIdToken({
+                            idToken: apiKey,
+                            audience: process.env.CLIENT_ID,
+                        });
+                        const storedPayload = storedTicket.getPayload();
+                        return storedPayload?.sub;
+                    } catch {
+                        return null;  // Handle invalid tokens gracefully
+                    }
+                }
+
+                for (const db_token of db_tokens) {
+                    const storedUserId = await getGoogleUserIdFromToken(db_token.api_key);
+                    if (storedUserId && storedUserId === googleUserId) {
+                        const user = await User.findOne({ uid: db_token.user_id });
                         if (user) {
                             return res.redirect(`${process.env.FRONT_URL}/login?token=${user.user_token}`);
                         }
                     }
                 }
 
-                return res.status(400).send("Invalid Google token");
+                return res.status(400).send("Invalid Google token or Google account not linked");
             } catch (error) {
                 return res.status(400).json({ message: "Invalid Google token" });
             }
