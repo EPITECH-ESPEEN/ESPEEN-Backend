@@ -145,7 +145,6 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
         return res.status(401).json({ error: "Unauthorized" });
     }
     const user_uid = userToken.uid;
-    res.redirect(`http://localhost:3000/services`);
     try {
         const tokenResponse = await axios.post(
             "https://github.com/login/oauth/access_token",
@@ -170,7 +169,7 @@ githubRouter.get("/github/callback", async (req: Request, res: Response) => {
                 },
             });
             await createAndUpdateApiKey(access_token, "", user_uid, "github");
-            return;
+            return res.status(200).send("Github account linked, come back to the app");
         } else {
             return res.status(500).send("Échec de l'obtention de l'access_token");
         }
