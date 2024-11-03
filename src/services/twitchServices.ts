@@ -312,7 +312,6 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
     }
 }
 
-//TODO NEW 
 export async function getTwitchFollowedChannels(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -339,10 +338,12 @@ export async function getTwitchFollowedChannels(message: any): Promise<any | nul
     try {
         const response = await axios.get(url, config);
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Channels followed : ${JSON.stringify(response.data)}`);
+        const broadcasterLogins = response.data.data.map((channel: any) => channel.broadcaster_login);
         const ret = {
             user_uid: message.user_uid,
-            data: JSON.stringify(response.data),
+            data: `Subscription : ${broadcasterLogins.join(", ")}`,
         };
+        console.log("Extracted broadcaster_logins:", ret.data);
         return ret;
     } catch (error) {
         console.error("Error fetching followed channels from Twitch:", error);
@@ -350,7 +351,6 @@ export async function getTwitchFollowedChannels(message: any): Promise<any | nul
     }
 }
 
-//TODO NEW
 export async function getTwitchChannelSubscriptions(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -379,7 +379,7 @@ export async function getTwitchChannelSubscriptions(message: any): Promise<any |
         console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Channel subscriptions : ${JSON.stringify(response.data)}`);
         const ret = {
             user_uid: message.user_uid,
-            data: JSON.stringify(response.data),
+            data: `Subscription : ${JSON.stringify(response.data)}`
         };
         return ret;
     } catch (error) {
@@ -577,8 +577,7 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
         if (!userToken) {
             return res.status(401).json({error: "Unauthorized"});
         }
-        // res.status(200).json({message: "User deleted successfully"});
-        res.redirect(`${process.env.FRONT_URL}/services`);
+        return res.status(200).send("User deleted successfully");
     } catch (error) {
         console.error("Error in /api/twitch/logout route:", error);
         return res.status(500).json({error: "Failed to process user"});
