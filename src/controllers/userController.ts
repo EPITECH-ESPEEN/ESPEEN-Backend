@@ -128,6 +128,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     const formattedUser = {
         uid: user.uid,
         username: user.username,
+        role: user.role,
         email: user.email,
         actionReaction: actionReaction,
     }
