@@ -93,15 +93,31 @@ export async function updateTwitchUserDescription(message: any) {
 
     try {
         const response = await axios.put(url, {}, config);
-        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch Reaction | Update user description data res : ${response.data}`);
+        console.log("\x1b[36m%s\x1b[0m", `[DEBUG] Twitch API | Update user description data res : ${response.data}`);
         const ret = {
             user_uid: message.user_uid,
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                console.error(`Error refreshing Twitch access token for user: ${uid}`);
+                return message;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.put(url, {}, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
         console.error("Error when update Twitch user description :", error);
         return message;
+        }
     }
 }
 
@@ -414,6 +430,39 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
     }
 }
 
+//////////// Handle token access ////////////
+
+async function refreshTwitchAccessToken(message: any): Promise<any | null> {
+    const uid: number = message.user_uid;
+    const tokens = await ApiKey.findOne({ user_id: uid, service: 'twitch' });
+    if (!tokens || !tokens.refresh_token) {
+        console.error("No Twitch refresh token found for user:", uid);
+        return null;
+    }
+
+    const refreshToken = tokens.refresh_token;
+    const url = 'https://id.twitch.tv/oauth2/token';
+    const params = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: process.env.TWITCH_CLIENT_ID!,
+        client_secret: process.env.TWITCH_CLIENT_SECRET!,
+    });
+
+    try {
+        const response = await axios.post(url, params);
+        const responseData = response.data as { access_token: string, refresh_token: string };
+        const newAccessToken = responseData.access_token;
+        const newRefreshToken = responseData.refresh_token;
+
+        await createAndUpdateApiKey(newAccessToken, newRefreshToken, uid, 'twitch');
+        return newAccessToken;
+    } catch (error) {
+        console.error("Error refreshing Twitch access token:", error);
+        return null;
+    }
+}
+
 
 //////////// OAuth2 ////////////
 
@@ -536,7 +585,9 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
     }
 });
 
-////
+
+
+////////////
 
 
 export default twitchRouter;
