@@ -45,7 +45,7 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
         return null;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
 
     let url = "https://api.twitch.tv/helix/users";
     const config = {
@@ -177,6 +177,7 @@ export async function getTwitchBannedUser(message: any) {
     }
 }
 
+
 export async function getTwitchModerators(message: any) {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -185,7 +186,7 @@ export async function getTwitchModerators(message: any) {
         return null;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -208,9 +209,26 @@ export async function getTwitchModerators(message: any) {
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
-        console.error("Error fetching moderators from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching moderators from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -223,7 +241,7 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -253,9 +271,26 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
             console.error("Twitch channel data not found in response");
             return message;
         }
-    } catch (error) {
-        console.error("Error fetching channel information from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching channel information from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -268,7 +303,7 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const broadcaster_id = await getUserIdFromAccessToken(message);
     if (!broadcaster_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -291,9 +326,26 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
-        console.error("Error fetching clips from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching clips from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -306,7 +358,7 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const url = `https://api.twitch.tv/helix/games/top?first=${first}`;
 
     const config = {
@@ -324,9 +376,26 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
-        console.error("Error fetching top games from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching top games from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -338,7 +407,7 @@ export async function getTwitchFollowedChannels(message: any): Promise<any | nul
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const user_id = await getUserIdFromAccessToken(message);
     if (!user_id) {
         console.error("No Twitch user_id found for user :", uid);
@@ -363,9 +432,26 @@ export async function getTwitchFollowedChannels(message: any): Promise<any | nul
         };
         console.log("Extracted broadcaster_logins:", ret.data);
         return ret;
-    } catch (error) {
-        console.error("Error fetching followed channels from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching followed channels from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -377,7 +463,7 @@ export async function getTwitchChannelSubscriptions(message: any): Promise<any |
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const user_id = await getUserIdFromAccessToken(message);
     if (!user_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -400,9 +486,26 @@ export async function getTwitchChannelSubscriptions(message: any): Promise<any |
             data: `Subscription : ${JSON.stringify(response.data)}`
         };
         return ret;
-    } catch (error) {
-        console.error("Error fetching channel subscriptions clips from Twitch:", error);
-        return message;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.get(url, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error fetching channel subscriptions clips from Twitch:", error);
+            return message;
+        }
     }
 }
 
@@ -414,7 +517,7 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
         return message;
     }
 
-    const accessToken = tokens.api_key;
+    let accessToken = tokens.api_key;
     const user_id = await getUserIdFromAccessToken(message);
     if (!user_id) {
         console.error("No broadcaster_id found for user :", uid);
@@ -442,9 +545,26 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
             data: JSON.stringify(response.data),
         };
         return ret;
-    } catch (error) {
-        console.error("Error send Twitch chat announcement:", error);
-        return null;
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            console.log("\x1b[36m%s\x1b[0m", "[DEBUG] Twitch API | Access token expired, refreshing...");
+            accessToken = await refreshTwitchAccessToken(message);
+            if (!accessToken) {
+                await ApiKey.deleteOne({ user_id: uid, service: "twitch" });
+                console.error(`Error refreshing Twitch access token for user: ${uid} with message : ${message}. User logged out of service.`);
+                return null;
+            }
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            const retryResponse = await axios.put(url, data, config);
+            const ret = {
+                user_uid: message.user_uid,
+                data: JSON.stringify(retryResponse.data),
+            };
+            return ret;
+        } else {
+            console.error("Error send Twitch chat announcement:", error);
+            return null;
+        }
     }
 }
 
