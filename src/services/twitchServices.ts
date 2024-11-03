@@ -34,7 +34,6 @@ export class TwitchApi implements API {
     }
 }
 
-//////////// Handle token access ////////////
 
 async function refreshTwitchAccessToken(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
@@ -67,9 +66,7 @@ async function refreshTwitchAccessToken(message: any): Promise<any | null> {
     }
 }
 
-//////////// Reactions ////////////
 
-//INFO : More an util function than a reaction
 export async function getUserIdFromAccessToken(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -103,6 +100,7 @@ export async function getUserIdFromAccessToken(message: any): Promise<any | null
         return null;
     }
 }
+
 
 export async function updateTwitchUserDescription(message: any) {
     const uid: number = message.user_uid;
@@ -250,7 +248,7 @@ export async function getTwitchModerators(message: any) {
     }
 }
 
-//INFO : This request no need moderated scope (broadcaster_id can be what we want)
+
 export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -305,7 +303,7 @@ export async function getTwitchChannelInfo(message: any): Promise<any | null> {
     }
 }
 
-//INFO : "first" parameter is optional (is the maximum number of items to return)
+
 export async function getTwitchUserClips(message: any, first: number = 5): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -352,7 +350,7 @@ export async function getTwitchUserClips(message: any, first: number = 5): Promi
     }
 }
 
-//INFO : "first" parameter is optional (is the maximum number of items to return)
+
 export async function getTwitchTopGames(message: any, first: number = 5): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -400,6 +398,7 @@ export async function getTwitchTopGames(message: any, first: number = 5): Promis
         }
     }
 }
+
 
 export async function getTwitchFollowedChannels(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
@@ -450,6 +449,7 @@ export async function getTwitchFollowedChannels(message: any): Promise<any | nul
     }
 }
 
+
 export async function getTwitchChannelSubscriptions(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
     const tokens = await ApiKey.findOne({ user_id: uid, service: "twitch" });
@@ -496,6 +496,7 @@ export async function getTwitchChannelSubscriptions(message: any): Promise<any |
         return message;
     }
 }
+
 
 export async function sendTwitchChatAnnouncement(message: any): Promise<any | null> {
     const uid: number = message.user_uid;
@@ -549,7 +550,6 @@ export async function sendTwitchChatAnnouncement(message: any): Promise<any | nu
     }
 }
 
-//////////// OAuth2 ////////////
 
 const twitchRouter = express.Router();
 
@@ -668,10 +668,6 @@ twitchRouter.get("/twitch/logout", async (req, res) => {
         return res.status(500).json({error: "Failed to process user"});
     }
 });
-
-
-
-////////////
 
 
 export default twitchRouter;
