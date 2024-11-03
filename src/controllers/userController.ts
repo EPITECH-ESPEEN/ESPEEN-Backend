@@ -7,11 +7,6 @@ import Service from "../models/serviceModel";
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = getFormattedToken(req);
-    if (!token) return next(new ErrorHandler("User token not found", 404));
-    const user = await User.findOne({ user_token: token });
-    if (!user) return next(new ErrorHandler("User not found", 404));
-    if (user.role !== "admin") return res.status(200).json({ users: [] });
     const users = await User.find({});
     if (!users) return next(new ErrorHandler("Users not found", 404));
     return res.status(200).json({ users });
