@@ -209,15 +209,37 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
 
         const authHeader = req.cookies.authToken;
         if (!authHeader) {
-            const db_token = await ApiKey.findOne({access_token: tokens.access_token});
-            if (!db_token) {
-                return res.status(400).json({message: "Google account not linked"});
+            const token = req.body.token;
+
+            try {
+                const ticket = await oauth2Client.verifyIdToken({
+                    idToken: token,
+                    audience: process.env.CLIENT_ID,
+                });
+                const payload = ticket.getPayload();
+                const googleUserId = payload?.sub;
+
+                const db_tokens = await ApiKey.find({ service: "Google" });
+
+                for (let i = 0; i < db_tokens.length; i++) {
+                    const storedTicket = await oauth2Client.verifyIdToken({
+                        idToken: db_tokens[i].api_key,
+                        audience: process.env.CLIENT_ID,
+                    });
+                    const storedPayload = storedTicket.getPayload();
+                    const storedUserId = storedPayload?.sub;
+                    if (storedUserId === googleUserId) {
+                        const user = await User.findOne({ uid: db_tokens[i].user_id });
+                        if (user) {
+                            return res.redirect(`${process.env.FRONT_URL}/login?token=${user.user_token}`);
+                        }
+                    }
+                }
+
+                return res.status(400).send("Invalid Google token");
+            } catch (error) {
+                return res.status(400).json({ message: "Invalid Google token" });
             }
-            const user = await User.findOne({uid: db_token.user_id});
-            if (!user) {
-                return res.status(400).json({message: "User not found"});
-            }
-            return res.redirect(`${process.env.FRONT_URL}/login?token=${user.user_token}`);
         }
         const userToken = await User.findOne({ user_token: authHeader });
         if (!userToken) {
