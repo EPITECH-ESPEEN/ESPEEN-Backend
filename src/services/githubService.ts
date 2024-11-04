@@ -89,7 +89,10 @@ async function createRepository(user_uid:string, datas: any) {
 
         if (!tokens || !tokens.api_key) {
             console.error("No tokens found for user:", user_uid);
-            return null;
+            let message: any = {};
+            message["user_uid"] = user_uid;
+            message["data"] = "error";
+            return message;
         }
         const accessToken = tokens.api_key;
         const repoName = (datas.data !== undefined) ? datas.data : "default name";
