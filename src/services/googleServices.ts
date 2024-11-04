@@ -203,41 +203,32 @@ googleRouter.get("/google/auth", (req, res) => {
 googleRouter.get("/google/oauth2callback", async (req, res) => {
     const code = req.query.code;
 
-    if (code) {
+    if (!code) {
+        return res.status(400).json("Code de validation manquant");
+    }
+
+    try {
         const { tokens } = await oauth2Client.getToken(code as string);
         oauth2Client.setCredentials(tokens);
-        const authHeader = req.cookies.authToken;
-        if (!authHeader) {
-            const token = req.body.token;
 
+        const authHeader = req.cookies.authToken;
+
+        if (!authHeader) {
+            const token = tokens.id_token;
             try {
-                // Verify the incoming Google token
                 const ticket = await oauth2Client.verifyIdToken({
                     idToken: token,
                     audience: process.env.CLIENT_ID,
                 });
                 const payload = ticket.getPayload();
                 const googleUserId = payload?.sub;
+                console.log("Verified Google User ID:", googleUserId);
 
-                // Fetch all tokens associated with Google
-                const db_tokens = await ApiKey.find({ service: "Google" });
-
-                // Helper function to get Google user ID from a stored token
-                async function getGoogleUserIdFromToken(apiKey: any) {
-                    try {
-                        const storedTicket = await oauth2Client.verifyIdToken({
-                            idToken: apiKey,
-                            audience: process.env.CLIENT_ID,
-                        });
-                        const storedPayload = storedTicket.getPayload();
-                        return storedPayload?.sub;
-                    } catch {
-                        return null;  // Handle invalid tokens gracefully
-                    }
-                }
+                const db_tokens = await ApiKey.find({ service: "google" });
 
                 for (const db_token of db_tokens) {
                     const storedUserId = await getGoogleUserIdFromToken(db_token.api_key);
+                    console.log("stored ", storedUserId);
                     if (storedUserId && storedUserId === googleUserId) {
                         const user = await User.findOne({ uid: db_token.user_id });
                         if (user) {
@@ -248,31 +239,55 @@ googleRouter.get("/google/oauth2callback", async (req, res) => {
 
                 return res.status(400).send("Invalid Google token or Google account not linked");
             } catch (error) {
+                console.error("Google token verification error:", error);
                 return res.status(400).json({ message: "Invalid Google token" });
             }
         }
+
         const userToken = await User.findOne({ user_token: authHeader });
         if (!userToken) {
             return res.status(401).json({ error: "Unauthorized" });
         }
         const user_uid = userToken.uid;
+
         if (tokens.access_token) {
-            if (tokens.refresh_token) {
-                await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "google");
-                await createAndUpdateApiKey(tokens.access_token, tokens.refresh_token, user_uid, "youtube");
-            } else {
-                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "google");
-                await createAndUpdateApiKey(tokens.access_token, "", user_uid, "youtube");
-            }
+            const refreshToken = tokens.refresh_token || "";
+            await createAndUpdateApiKey(tokens.access_token, refreshToken, user_uid, "google");
+            await createAndUpdateApiKey(tokens.access_token, refreshToken, user_uid, "youtube");
+
             return res.status(200).send("Google account linked, come back to the app");
         } else {
             console.error("Access token or refresh token is missing");
             return res.status(500).json("Internal Server Error");
         }
-    } else {
-        return res.status(400).json("Code de validation manquant");
+    } catch (error) {
+        console.error("Error during OAuth2 callback handling:", error);
+        return res.status(500).json("Internal Server Error");
     }
 });
+
+async function getGoogleUserIdFromToken(apiKey) {
+    try {
+        console.log("API Key:", apiKey);
+        const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${apiKey}` },
+        });
+
+        console.log("Stored Google User ID from access token:", response.data.sub);
+        return response.data.sub;
+    } catch (error) {
+        if (error.response) {
+            if (error.response.status === 401) {
+                console.error("Token is expired or invalid:", apiKey);
+            } else {
+                console.error("Error in Userinfo API response:", error.response.status, error.response.data);
+            }
+        } else {
+            console.error("Network or unknown error verifying token:", error.message);
+        }
+        return null;
+    }
+}
 
 googleRouter.get("/google/logout", async (req, res) => {
     try {
