@@ -272,7 +272,6 @@ async function getGoogleUserIdFromToken(apiKey) {
         const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
             headers: { Authorization: `Bearer ${apiKey}` },
         });
-
         console.log("Stored Google User ID from access token:", response.data.sub);
         return response.data.sub;
     } catch (error) {
