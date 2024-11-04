@@ -1,9 +1,9 @@
 import ApiKey from "../models/apiKeyModels";
 import axios from "axios";
-import { API } from "../utils/interfaces";
+import {API} from "../utils/interfaces";
 import express from "express";
 import dotenv from "dotenv";
-import { google } from "googleapis";
+import {google} from "googleapis";
 import User from "../models/userModel";
 import {createAndUpdateApiKey} from "../controllers/apiKeyController";
 import {getFormattedToken} from "../utils/token";
@@ -48,7 +48,9 @@ export async function getUserEmail(user_uid: string) {
 }
 
 export async function sendEmails(message: any) {
-    if (message === undefined) return null;
+    if (message === undefined) {
+        return {user_uid: "", data: "error"};
+    }
     const tokens = await ApiKey.findOne({ user_id: message.user_uid, service: "google" });
 
     const email_u = await getUserEmail(message.user_uid);
@@ -132,7 +134,10 @@ async function checkEmails(user_uid: string) {
 
     if (!tokens || !tokens.api_key) {
         console.error("No tokens found for user:", user_uid);
-        return null;
+        let message: any = {};
+        message["user_uid"] = user_uid;
+        message["data"] = "error";
+        return message;
     }
 
     let accessToken = tokens.api_key;
@@ -148,7 +153,10 @@ async function checkEmails(user_uid: string) {
             oauth2Client.setCredentials({ access_token: accessToken });
         } catch (error) {
             console.error("Error refreshing token:", error);
-            return null;
+            let message: any = {};
+            message["user_uid"] = user_uid;
+            message["data"] = "error";
+            return message;
         }
     } else {
         oauth2Client.setCredentials({ access_token: accessToken });
@@ -179,16 +187,28 @@ async function checkEmails(user_uid: string) {
 
             if (body) {
                 const decodedBody = Buffer.from(body, "base64").toString("utf-8");
-                return decodedBody;
+                let message: any = {};
+                message["user_uid"] = user_uid;
+                message["data"] = decodedBody;
+                return message;
             } else {
-                return null;
+                let message: any = {};
+                message["user_uid"] = user_uid;
+                message["data"] = "error";
+                return message;
             }
         } else {
-            return null;
+            let message: any = {};
+            message["user_uid"] = user_uid;
+            message["data"] = "error";
+            return message;
         }
     } catch (error) {
         console.error("Error while fetching messages:", error);
-        return null;
+        let message: any = {};
+        message["user_uid"] = user_uid;
+        message["data"] = "error";
+        return message;
     }
 }
 
