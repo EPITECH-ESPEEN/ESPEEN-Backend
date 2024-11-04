@@ -44,7 +44,10 @@ async function getPushEvents(user_uid: string) {
         const tokens = await ApiKey.findOne({ user_id: user_uid, service: "github" });
         if (!tokens || !tokens.api_key) {
             console.error("No tokens found for user:", user_uid);
-            return null;
+            let message: any = {};
+            message["user_uid"] = user_uid;
+            message["data"] = "error";
+            return message;
         }
         const userResponse: any = await axios.get('https://api.github.com/user', {
             headers: {
@@ -60,7 +63,10 @@ async function getPushEvents(user_uid: string) {
         const newPushes = pushes.filter((obj: any) => obj.id && !isAlreadyInArray(user_uid, obj.id));
         if (newPushes.length <= 0) {
             console.log('No new pushes');
-            return;
+            let message: any = {};
+            message["user_uid"] = user_uid;
+            message["data"] = "No new pushes detected";
+            return message;
         }
         const push = newPushes[0];
 
@@ -70,7 +76,10 @@ async function getPushEvents(user_uid: string) {
         return message;
     } catch (error) {
         console.error('Erreur lors de la récupération des événements:', error);
-        return [];
+        let message: any = {};
+        message["user_uid"] = user_uid;
+        message["data"] = "error";
+        return message;
     }
 }
 
@@ -84,7 +93,7 @@ async function createRepository(user_uid:string, datas: any) {
         }
         const accessToken = tokens.api_key;
         const repoName = (datas.data !== undefined) ? datas.data : "default name";
-        const response: any = await axios.post(
+        await axios.post(
             'https://api.github.com/user/repos',
             {
                 name: repoName,
@@ -99,10 +108,16 @@ async function createRepository(user_uid:string, datas: any) {
             }
         );
 
-        return {user_uid: user_uid, data: "created"};
+        let message: any = {};
+        message["user_uid"] = user_uid;
+        message["data"] = "created";
+        return message;
     } catch (error) {
         console.error('Error creating repository:', error);
-        return {user_uid: user_uid, data: "error"};
+        let message: any = {};
+        message["user_uid"] = user_uid;
+        message["data"] = "error";
+        return message;
     }
 }
 
